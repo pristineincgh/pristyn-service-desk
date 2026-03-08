@@ -12,13 +12,13 @@ import * as bcrypt from 'bcrypt';
 import { randomInt } from 'crypto';
 import { User } from 'src/generated/prisma/client';
 import {
-  // ActivityEntityType,
-  // ActivityLogAction,
+  ActivityEntityType,
+  ActivityLogAction,
   UserRole,
 } from 'src/generated/prisma/enums';
 import { PrismaService } from 'src/prisma.service';
 import { SafeUser } from 'src/auth/types/user.types';
-// import { ActivityService } from 'src/activity/activity.service';
+import { ActivityService } from 'src/activity/activity.service';
 
 @Injectable()
 export class UsersService {
@@ -26,7 +26,7 @@ export class UsersService {
 
   constructor(
     private readonly prisma: PrismaService,
-    // private readonly activityService: ActivityService,
+    private readonly activityService: ActivityService,
   ) {}
 
   private readonly safeUserSelect = {
@@ -220,17 +220,17 @@ export class UsersService {
       },
     });
 
-    // await this.activityService.logActivity({
-    //   action: ActivityLogAction.USER_CREATED,
-    //   entityType: ActivityEntityType.USER,
-    //   entityId: user.id,
-    //   actorId: actorId ?? null,
-    //   userId: user.id,
-    //   metadata: {
-    //     role: user.role,
-    //     email: user.email,
-    //   },
-    // });
+    await this.activityService.logActivity({
+      action: ActivityLogAction.USER_CREATED,
+      entityType: ActivityEntityType.USER,
+      entityId: user.id,
+      actorId: actorId ?? null,
+      userId: user.id,
+      metadata: {
+        role: user.role,
+        email: user.email,
+      },
+    });
 
     return {
       user,
@@ -298,16 +298,16 @@ export class UsersService {
       },
     });
 
-    // await this.activityService.logActivity({
-    //   action: ActivityLogAction.USER_ASSIGNED_TO_SUPERVISOR,
-    //   entityType: ActivityEntityType.USER,
-    //   entityId: user.id,
-    //   actorId: actorId ?? null,
-    //   userId: user.id,
-    //   metadata: {
-    //     supervisorId: supervisor.id,
-    //   },
-    // });
+    await this.activityService.logActivity({
+      action: ActivityLogAction.USER_ASSIGNED_TO_SUPERVISOR,
+      entityType: ActivityEntityType.USER,
+      entityId: user.id,
+      actorId: actorId ?? null,
+      userId: user.id,
+      metadata: {
+        supervisorId: supervisor.id,
+      },
+    });
 
     return user;
   }

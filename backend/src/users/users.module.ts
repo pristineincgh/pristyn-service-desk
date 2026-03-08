@@ -4,9 +4,10 @@ import { UsersController } from './users.controller';
 import { AuthModule } from 'src/auth/auth.module';
 import { PrismaService } from 'src/prisma.service';
 import { UsersBootstrapService } from './users-bootstrap.service';
+import { ActivityModule } from 'src/activity/activity.module';
 
 @Module({
-  imports: [forwardRef(() => AuthModule)],
+  imports: [forwardRef(() => AuthModule), ActivityModule],
   providers: [UsersService, PrismaService, UsersBootstrapService],
   controllers: [UsersController],
   exports: [UsersService],
