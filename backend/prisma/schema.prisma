@@ -1,0 +1,174 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id            String     @id @default(uuid())
+  name          String
+  email         String     @unique
+  password      String
+  role          UserRole   @default(SUPPORT_STAFF)
+  phone         String?
+  emailVerified Boolean    @default(false)
+  status        UserStatus @default(ACTIVE)
+  supervisorId  String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  supervisor      User?         @relation("SupervisorToSupportStaff", fields: [supervisorId], references: [id])
+  supportStaffs   User[]        @relation("SupervisorToSupportStaff")
+  assignedTickets Ticket[]      @relation("TicketAssignee")
+  createdTickets  Ticket[]      @relation("TicketCreator")
+  updatedTickets  Ticket[]      @relation("TicketUpdater")
+  ticketNotes     TicketNote[]  @relation("TicketNoteCreator")
+  activityActions ActivityLog[] @relation("ActivityActor")
+  activityUsers   ActivityLog[] @relation("ActivityTargetUser")
+
+  @@index([email])
+  @@index([supervisorId])
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  name      String
+  email     String?  @unique
+  phone     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tickets     Ticket[]
+  ticketNotes TicketNote[] @relation("TicketNoteCustomer")
+
+  @@index([email])
+  @@index([phone])
+}
+
+model Ticket {
+  id                String       @id @default(uuid())
+  ticketNumber      String       @unique
+  title             String
+  description       String
+  status            TicketStatus @default(OPEN)
+  priority          Priority     @default(LOW)
+  ticketIssueTypeId String
+  customerId        String
+  assignedToId      String?
+  createdById       String
+  updatedById       String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  ticketIssueType TicketIssueType @relation(fields: [ticketIssueTypeId], references: [id])
+  customer        Customer        @relation(fields: [customerId], references: [id])
+  assignedTo      User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  createdBy       User            @relation("TicketCreator", fields: [createdById], references: [id])
+  updatedBy       User?           @relation("TicketUpdater", fields: [updatedById], references: [id])
+  notes           TicketNote[]
+  activities      ActivityLog[]
+
+  @@index([ticketNumber])
+  @@index([ticketIssueTypeId])
+  @@index([customerId])
+  @@index([assignedToId])
+  @@index([createdById])
+  @@index([updatedById])
+}
+
+model ActivityLog {
+  id         String             @id @default(uuid())
+  action     ActivityLogAction
+  entityType ActivityEntityType
+  entityId   String
+  actorId    String?
+  ticketId   String?
+  userId     String?
+  metadata   Json?
+  createdAt  DateTime           @default(now())
+
+  actor  User?   @relation("ActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
+  ticket Ticket? @relation(fields: [ticketId], references: [id], onDelete: SetNull)
+  user   User?   @relation("ActivityTargetUser", fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@index([ticketId])
+  @@index([userId])
+}
+
+model TicketIssueType {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tickets Ticket[]
+
+  @@index([name])
+}
+
+model TicketNote {
+  id                  String   @id @default(uuid())
+  content             String
+  isInternal          Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  ticketId            String
+  createdById         String?
+  createdByCustomerId String?
+
+  ticket            Ticket    @relation(fields: [ticketId], references: [id])
+  createdBy         User?     @relation("TicketNoteCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdByCustomer Customer? @relation("TicketNoteCustomer", fields: [createdByCustomerId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId])
+  @@index([createdById])
+  @@index([createdByCustomerId])
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum UserRole {
+  SUPPORT_STAFF
+  SUPERVISOR
+  MODERATOR
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ActivityEntityType {
+  TICKET
+  USER
+  SYSTEM
+}
+
+enum ActivityLogAction {
+  TICKET_CREATED
+  TICKET_UPDATED
+  TICKET_ASSIGNED
+  TICKET_STATUS_CHANGED
+  TICKET_PRIORITY_CHANGED
+  TICKET_DELETED
+  USER_CREATED
+  USER_ASSIGNED_TO_SUPERVISOR
+}
