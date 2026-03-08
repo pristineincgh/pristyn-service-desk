@@ -15,7 +15,13 @@ export const configValidationSchema = Joi.object({
   SLA_LOW_PRIORITY_HOURS: Joi.number().integer().positive().default(72),
   SLA_AT_RISK_WINDOW_HOURS: Joi.number().integer().positive().default(6),
   COOKIE_SECRET: Joi.string().min(64).required(),
+  COOKIE_DOMAIN: Joi.string().optional(),
+  COOKIE_SECURE: Joi.boolean().default(false),
+  COOKIE_SAME_SITE: Joi.string().valid('strict', 'lax', 'none').default('lax'),
   CORS_ORIGIN: Joi.string().uri().required(),
+  MODERATOR_EMAIL: Joi.string().email().optional(),
+  MODERATOR_PASSWORD: Joi.string().min(8).optional(),
+  MODERATOR_NAME: Joi.string().min(1).default('System Moderator'),
 });
 
 export const configuration = () => ({
@@ -56,8 +62,19 @@ export const configuration = () => ({
   },
   cookie: {
     secret: process.env.COOKIE_SECRET,
+    domain: process.env.COOKIE_DOMAIN,
+    secure:
+      process.env.COOKIE_SECURE !== undefined
+        ? process.env.COOKIE_SECURE === 'true'
+        : undefined,
+    sameSite: process.env.COOKIE_SAME_SITE,
   },
   cors: {
     origin: process.env.CORS_ORIGIN,
+  },
+  moderator: {
+    email: process.env.MODERATOR_EMAIL,
+    password: process.env.MODERATOR_PASSWORD,
+    name: process.env.MODERATOR_NAME,
   },
 });

@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -21,6 +22,8 @@ import { SafeUser } from 'src/auth/types/user.types';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     // private readonly activityService: ActivityService,
@@ -70,6 +73,38 @@ export class UsersService {
     }
 
     return passwordCharacters.join('');
+  }
+
+  async ensureModeratorAccount(input: {
+    email: string;
+    password: string;
+    name: string;
+  }) {
+    const existingUser = await this.findByEmail(input.email);
+
+    if (existingUser) {
+      this.logger.log(
+        `Moderator bootstrap skipped because ${input.email} already exists.`,
+      );
+      return existingUser;
+    }
+
+    const hashedPassword = await bcrypt.hash(input.password, 10);
+
+    const moderator = await this.prisma.user.create({
+      data: {
+        name: input.name,
+        email: input.email,
+        password: hashedPassword,
+        role: UserRole.MODERATOR,
+        emailVerified: true,
+      },
+      select: this.safeUserSelect,
+    });
+
+    this.logger.log(`Bootstrapped moderator account for ${input.email}.`);
+
+    return moderator;
   }
 
   async findByEmail(email: string): Promise<User | null> {
@@ -167,9 +202,7 @@ export class UsersService {
     }
 
     const defaultPassword = this.generateUserDefaultPassword();
-    const tempPassword = 'P@ssw0rd'; // For testing purposes, replace with defaultPassword in production
-
-    const hashedPassword = await bcrypt.hash(tempPassword, 10);
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
     // Create user
     const user = await this.prisma.user.create({
