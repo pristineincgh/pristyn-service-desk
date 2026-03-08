@@ -8,5 +8,6 @@ import { AuthModule } from 'src/auth/auth.module';
   imports: [AuthModule],
   providers: [ActivityService, PrismaService],
   controllers: [ActivityController],
+  exports: [ActivityService],
 })
 export class ActivityModule {}

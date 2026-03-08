@@ -8,6 +8,7 @@ import { configuration, configValidationSchema } from './config/config';
 import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './auth/auth.module';
 import { ActivityModule } from './activity/activity.module';
+import { CustomersModule } from './customers/customers.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ActivityModule } from './activity/activity.module';
     RedisModule,
     AuthModule,
     ActivityModule,
+    CustomersModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
