@@ -9,6 +9,8 @@ import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './auth/auth.module';
 import { ActivityModule } from './activity/activity.module';
 import { CustomersModule } from './customers/customers.module';
+import { TicketIssueTypesModule } from './ticket-issue-types/ticket-issue-types.module';
+import { TicketsModule } from './tickets/tickets.module';
 
 @Module({
   imports: [
@@ -22,6 +24,8 @@ import { CustomersModule } from './customers/customers.module';
     AuthModule,
     ActivityModule,
     CustomersModule,
+    TicketIssueTypesModule,
+    TicketsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
