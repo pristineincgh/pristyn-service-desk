@@ -28,7 +28,7 @@ const SidebarNav = () => {
   const userRole = authUser?.role;
 
   const roleNavMap: Record<UserRole, typeof supportNavItems> = {
-    [UserRole.SUPPORT_STAFF]: supportNavItems,
+    [UserRole.AGENT]: supportNavItems,
     [UserRole.SUPERVISOR]: supervisorNavItems,
     [UserRole.MODERATOR]: moderatorNavItems,
   };

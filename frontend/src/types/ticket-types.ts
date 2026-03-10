@@ -1,11 +1,11 @@
-export interface TicketIssueType {
+export interface TicketCategory {
   id: string;
   name: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface TicketIssueTypeRef {
+export interface TicketCategoryRef {
   id: string;
   name: string;
 }
@@ -43,7 +43,7 @@ export interface TicketShort {
   title: string;
   description: string;
   customerId: string;
-  issueType: TicketIssueTypeRef;
+  category: TicketCategoryRef;
   status: TicketStatus;
   assignedTo: {
     id: string;
@@ -89,7 +89,7 @@ export interface TicketListResponse {
 export interface CreateTicketPayload {
   title: string;
   description: string;
-  issueTypeId: string;
+  categoryId: string;
   customerId: string;
   status?: TicketStatus;
   priority?: TicketPriority;

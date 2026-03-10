@@ -1,5 +1,5 @@
 export enum UserRole {
-  SUPPORT_STAFF = 'SUPPORT_STAFF',
+  AGENT = 'AGENT',
   SUPERVISOR = 'SUPERVISOR',
   MODERATOR = 'MODERATOR',
 }
@@ -44,7 +44,7 @@ export interface CreateUserResponse {
 }
 
 export interface AssignSupervisorPayload {
-  supportStaffId: string;
+  agentId: string;
   supervisorId: string;
 }
 

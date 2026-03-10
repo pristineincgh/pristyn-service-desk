@@ -22,3 +22,18 @@ export interface CreateCustomerResponse {
   message: string;
   customer: Customer;
 }
+
+export interface UpdateCustomerPayload {
+  name?: string;
+  phone?: string;
+  email?: string;
+}
+
+export interface UpdateCustomerResponse {
+  message: string;
+  customer: Customer;
+}
+
+export interface DeleteCustomerResponse {
+  message: string;
+}
