@@ -16,7 +16,6 @@ const UserKPIs = ({
   customerCount,
   isLoading = false,
 }: UserKPIsProps) => {
-
   const cards = [
     {
       title: 'Active agents',
@@ -42,20 +41,18 @@ const UserKPIs = ({
   ];
 
   return (
-    <section className='space-y-4'>
-      <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
-        {cards.map((card) => (
-          <KPICard
-            key={card.title}
-            title={card.title}
-            value={card.value}
-            icon={card.icon}
-            theme={card.theme}
-            detailsHref={card.detailsHref}
-            loading={isLoading}
-          />
-        ))}
-      </div>
+    <section className='grid gap-6 md:grid-cols-2 xl:grid-cols-3'>
+      {cards.map((card) => (
+        <KPICard
+          key={card.title}
+          title={card.title}
+          value={card.value}
+          icon={card.icon}
+          theme={card.theme}
+          detailsHref={card.detailsHref}
+          loading={isLoading}
+        />
+      ))}
     </section>
   );
 };

@@ -1,6 +1,7 @@
 'use client';
 
 import KPICard from '@/components/common/cards/KPICard';
+import { Button } from '@/components/ui/button';
 import { TicketShort, TicketStatus } from '@/types/ticket-types';
 import {
   AlertTriangle,
@@ -9,6 +10,7 @@ import {
   FolderOpen,
   Inbox,
   ListTodo,
+  Plus,
 } from 'lucide-react';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -18,18 +20,27 @@ type TicketSummaryProps = {
   total: number;
   isLoading?: boolean;
   errorMessage?: string;
+  onOpenNewTicketModal?: (open: boolean) => void;
 };
 
 const TicketSummary = ({
   tickets,
-  total,
   isLoading = false,
-  errorMessage,
+  onOpenNewTicketModal,
 }: TicketSummaryProps) => {
-  const now = Date.now();
+  const referenceTimeMs = tickets.reduce((latest, ticket) => {
+    const calculatedAtMs = new Date(ticket.sla.calculatedAt).getTime();
+
+    if (Number.isNaN(calculatedAtMs)) {
+      return latest;
+    }
+
+    return Math.max(latest, calculatedAtMs);
+  }, 0);
 
   const newTicketsCount = tickets.filter(
-    (ticket) => now - new Date(ticket.createdAt).getTime() <= ONE_DAY_MS
+    (ticket) =>
+      referenceTimeMs - new Date(ticket.createdAt).getTime() <= ONE_DAY_MS
   ).length;
   const overdueTicketsCount = tickets.filter(
     (ticket) => ticket.sla.breached
@@ -93,14 +104,23 @@ const TicketSummary = ({
   ];
 
   return (
-    <section className='space-y-4'>
-      <div>
-        <h2 className='text-lg font-semibold tracking-tight text-foreground'>
-          Ticket summary
-        </h2>
-        <p className='text-sm text-muted-foreground'>
-          Operational snapshot across current ticket statuses and SLA health.
-        </p>
+    <section className='space-y-6'>
+      <div className='flex justify-between items-center'>
+        <div>
+          <h2 className='text-lg font-semibold tracking-tight text-foreground'>
+            Ticket summary
+          </h2>
+          <p className='text-sm text-muted-foreground'>
+            Operational snapshot across current ticket statuses and SLA health.
+          </p>
+        </div>
+
+        {onOpenNewTicketModal ? (
+          <Button type='button' onClick={() => onOpenNewTicketModal(true)}>
+            <Plus />
+            New Ticket
+          </Button>
+        ) : null}
       </div>
 
       <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>

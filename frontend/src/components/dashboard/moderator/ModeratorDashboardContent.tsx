@@ -49,7 +49,7 @@ const ModeratorDashboardContent = () => {
     activeUsersQuery.isLoading || customersQuery.isLoading;
 
   return (
-    <div className='space-y-5'>
+    <div className='space-y-6'>
       <UserKPIs
         agentCount={agentCount}
         supervisorCount={supervisorCount}
@@ -66,7 +66,7 @@ const ModeratorDashboardContent = () => {
         onCreateCategory={() => setIsCreateCategoryModalOpen(true)}
       />
 
-      <section className='grid grid-cols-1 gap-5 xl:grid-cols-5'>
+      <section className='grid grid-cols-1 gap-6 xl:grid-cols-5'>
         <div className='xl:col-span-3'>
           <TicketSummary
             tickets={tickets}
@@ -85,7 +85,7 @@ const ModeratorDashboardContent = () => {
         </div>
       </section>
 
-      <section className='grid gap-5 xl:grid-cols-3'>
+      <section className='grid gap-6 xl:grid-cols-3'>
         <TicketCategorySummary
           tickets={tickets}
           total={ticketsQuery.data?.total ?? 0}
