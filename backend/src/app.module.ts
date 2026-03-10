@@ -9,7 +9,7 @@ import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './auth/auth.module';
 import { ActivityModule } from './activity/activity.module';
 import { CustomersModule } from './customers/customers.module';
-import { TicketIssueTypesModule } from './ticket-issue-types/ticket-issue-types.module';
+import { TicketCategoriesModule } from './ticket-categories/ticket-categories.module';
 import { TicketsModule } from './tickets/tickets.module';
 
 @Module({
@@ -24,7 +24,7 @@ import { TicketsModule } from './tickets/tickets.module';
     AuthModule,
     ActivityModule,
     CustomersModule,
-    TicketIssueTypesModule,
+    TicketCategoriesModule,
     TicketsModule,
   ],
   controllers: [AppController],
