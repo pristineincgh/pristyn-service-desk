@@ -46,7 +46,7 @@ const TICKET_INCLUDE = {
       name: true,
     },
   },
-  ticketIssueType: {
+  ticketCategory: {
     select: {
       id: true,
       name: true,
@@ -229,7 +229,7 @@ export class TicketsService {
       };
     }
 
-    if (requester.role === UserRole.SUPPORT_STAFF) {
+    if (requester.role === UserRole.AGENT) {
       return { createdById: requester.id };
     }
 
@@ -260,10 +260,10 @@ export class TicketsService {
       return requester;
     }
 
-    if (requester.role === UserRole.SUPPORT_STAFF) {
+    if (requester.role === UserRole.AGENT) {
       if (ticket.createdById !== requester.id) {
         throw new ForbiddenException(
-          'Support staff can only manage tickets they created',
+          'Agents can only manage tickets they created',
         );
       }
 
@@ -338,14 +338,14 @@ export class TicketsService {
       };
     }
 
-    if (requester.role === UserRole.SUPPORT_STAFF) {
+    if (requester.role === UserRole.AGENT) {
       const hasUnauthorizedTicket = tickets.some(
         (ticket) => ticket.createdById !== requester.id,
       );
 
       if (hasUnauthorizedTicket) {
         throw new ForbiddenException(
-          'Support staff can only manage tickets they created',
+          'Agents can only manage tickets they created',
         );
       }
 
@@ -424,11 +424,11 @@ export class TicketsService {
       }
     }
 
-    // validate issue type
-    const issueType = await this.prisma.ticketIssueType.findUnique({
-      where: { id: createTicketDto.issueTypeId },
+    // validate category
+    const category = await this.prisma.ticketCategory.findUnique({
+      where: { id: createTicketDto.categoryId },
     });
-    if (!issueType) throw new NotFoundException('Issue type not found');
+    if (!category) throw new NotFoundException('Category not found');
 
     // validate customer
     const customer = await this.prisma.customer.findUnique({
@@ -455,7 +455,7 @@ export class TicketsService {
             ticketNumber,
             title: createTicketDto.title,
             description: createTicketDto.description,
-            ticketIssueTypeId: createTicketDto.issueTypeId,
+            ticketCategoryId: createTicketDto.categoryId,
             customerId: createTicketDto.customerId,
             status: createTicketDto.status, // defaults handled by Prisma
             priority: createTicketDto.priority,
@@ -600,14 +600,14 @@ export class TicketsService {
       }
     }
 
-    if (updateTicketDto.issueTypeId !== undefined) {
-      const issueType = await this.prisma.ticketIssueType.findUnique({
-        where: { id: updateTicketDto.issueTypeId },
+    if (updateTicketDto.categoryId !== undefined) {
+      const category = await this.prisma.ticketCategory.findUnique({
+        where: { id: updateTicketDto.categoryId },
         select: { id: true },
       });
 
-      if (!issueType) {
-        throw new NotFoundException('Issue type not found');
+      if (!category) {
+        throw new NotFoundException('Category not found');
       }
     }
 
@@ -625,8 +625,8 @@ export class TicketsService {
       ...(updateTicketDto.priority !== undefined
         ? { priority: updateTicketDto.priority }
         : {}),
-      ...(updateTicketDto.issueTypeId !== undefined
-        ? { ticketIssueTypeId: updateTicketDto.issueTypeId }
+      ...(updateTicketDto.categoryId !== undefined
+        ? { ticketCategoryId: updateTicketDto.categoryId }
         : {}),
       ...(updateTicketDto.assignedToId !== undefined
         ? { assignedToId: updateTicketDto.assignedToId }

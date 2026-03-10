@@ -15,7 +15,7 @@ import { UserRole } from 'src/generated/prisma/enums';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from 'src/auth/types/user.types';
-import { AssignSupportStaffDto } from './dto/assign-support-staff.dto';
+import { AssignAgentDto } from './dto/assign-agent.dto';
 
 @Controller('users')
 export class UsersController {
@@ -75,18 +75,18 @@ export class UsersController {
   @UseGuards(SessionAuthGuard, RolesGuard)
   @Roles(UserRole.MODERATOR)
   @Patch('assign-supervisor')
-  async assignSupportStaffToSupervisor(
-    @Body() dto: AssignSupportStaffDto,
+  async assignAgentToSupervisor(
+    @Body() dto: AssignAgentDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const supportStaff = await this.usersService.assignSupportStaffToSupervisor(
+    const agent = await this.usersService.assignAgentToSupervisor(
       dto,
       user.id,
     );
 
     return {
-      message: 'Support staff assigned to supervisor successfully.',
-      user: supportStaff,
+      message: 'Agent assigned to supervisor successfully.',
+      user: agent,
     };
   }
 }

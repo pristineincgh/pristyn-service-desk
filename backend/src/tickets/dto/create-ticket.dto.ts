@@ -12,7 +12,7 @@ export class CreateTicketDto {
 
   @IsString()
   @IsNotEmpty()
-  issueTypeId!: string;
+  categoryId!: string;
 
   @IsString()
   @IsNotEmpty()

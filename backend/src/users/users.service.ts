@@ -7,7 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
-import { AssignSupportStaffDto } from './dto/assign-support-staff.dto';
+import { AssignAgentDto } from './dto/assign-agent.dto';
 import * as bcrypt from 'bcrypt';
 import { randomInt } from 'crypto';
 import { User } from 'src/generated/prisma/client';
@@ -238,19 +238,19 @@ export class UsersService {
     };
   }
 
-  async assignSupportStaffToSupervisor(
-    dto: AssignSupportStaffDto,
+  async assignAgentToSupervisor(
+    dto: AssignAgentDto,
     actorId?: string,
   ) {
-    if (dto.supportStaffId === dto.supervisorId) {
+    if (dto.agentId === dto.supervisorId) {
       throw new BadRequestException(
-        'Support staff and supervisor cannot be the same user',
+        'Agent and supervisor cannot be the same user',
       );
     }
 
-    const [supportStaff, supervisor] = await Promise.all([
+    const [agent, supervisor] = await Promise.all([
       this.prisma.user.findUnique({
-        where: { id: dto.supportStaffId },
+        where: { id: dto.agentId },
         select: {
           id: true,
           role: true,
@@ -265,16 +265,16 @@ export class UsersService {
       }),
     ]);
 
-    if (!supportStaff) {
-      throw new NotFoundException('Support staff does not exist');
+    if (!agent) {
+      throw new NotFoundException('Agent does not exist');
     }
 
     if (!supervisor) {
       throw new NotFoundException('Supervisor does not exist');
     }
 
-    if (supportStaff.role !== UserRole.SUPPORT_STAFF) {
-      throw new BadRequestException('User to assign must be a support staff');
+    if (agent.role !== UserRole.AGENT) {
+      throw new BadRequestException('User to assign must be an agent');
     }
 
     if (supervisor.role !== UserRole.SUPERVISOR) {
@@ -284,7 +284,7 @@ export class UsersService {
     }
 
     const user = await this.prisma.user.update({
-      where: { id: supportStaff.id },
+      where: { id: agent.id },
       data: { supervisorId: supervisor.id },
       select: {
         ...this.safeUserSelect,
@@ -344,7 +344,7 @@ export class UsersService {
       };
     }
 
-    if (requester.role === UserRole.SUPPORT_STAFF) {
+    if (requester.role === UserRole.AGENT) {
       if (!requester.supervisorId) {
         return {
           total: 0,
@@ -384,10 +384,10 @@ export class UsersService {
       return this.findPublicById(targetUserId);
     }
 
-    if (requester.role === UserRole.SUPPORT_STAFF) {
+    if (requester.role === UserRole.AGENT) {
       if (requester.supervisorId !== targetUserId) {
         throw new ForbiddenException(
-          'Support staff can only view their assigned supervisor',
+          'Agents can only view their assigned supervisor',
         );
       }
 
@@ -407,7 +407,7 @@ export class UsersService {
     }
 
     if (requester.role === UserRole.SUPERVISOR) {
-      const supportStaff = await this.prisma.user.findFirst({
+      const agent = await this.prisma.user.findFirst({
         where: {
           id: targetUserId,
           supervisorId: requester.id,
@@ -415,13 +415,13 @@ export class UsersService {
         select: this.safeUserSelect,
       });
 
-      if (!supportStaff) {
+      if (!agent) {
         throw new ForbiddenException(
-          'Supervisors can only view their assigned support staff',
+          'Supervisors can only view their assigned agents',
         );
       }
 
-      return supportStaff;
+      return agent;
     }
 
     throw new ForbiddenException('Unsupported user role');
