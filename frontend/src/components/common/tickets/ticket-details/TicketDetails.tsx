@@ -72,6 +72,15 @@ const TicketDetails = ({ ticketId }: Props) => {
   const [editedNoteContent, setEditedNoteContent] = useState('');
   const [editedNoteInternal, setEditedNoteInternal] = useState(true);
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.push('/dashboard/moderator/tickets');
+  };
+
   const assignees = useMemo<UserShort[]>(() => {
     const scopedUsers = usersByScopeResponse?.users ?? [];
 
@@ -293,11 +302,9 @@ const TicketDetails = ({ ticketId }: Props) => {
   if (!ticket || isError) {
     return (
       <div className='space-y-4'>
-        <Button variant='outline' asChild>
-          <Link href='/dashboard/moderator/tickets'>
-            <ArrowLeft />
-            Back to tickets
-          </Link>
+        <Button variant='outline' type='button' onClick={handleBack}>
+          <ArrowLeft />
+          Back
         </Button>
 
         <Card>

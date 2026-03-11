@@ -24,6 +24,36 @@ const CUSTOMER_SELECT = {
   updatedAt: true,
 } as const;
 
+const CUSTOMER_DETAIL_SELECT = {
+  ...CUSTOMER_SELECT,
+  tickets: {
+    orderBy: {
+      createdAt: 'desc',
+    },
+    select: {
+      id: true,
+      ticketNumber: true,
+      title: true,
+      status: true,
+      priority: true,
+      createdAt: true,
+      updatedAt: true,
+      ticketCategory: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      assignedTo: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  },
+} as const;
+
 @Injectable()
 export class CustomersService {
   constructor(private readonly prisma: PrismaService) {}
@@ -144,7 +174,7 @@ export class CustomersService {
   async findCustomerById(id: string) {
     const customer = await this.prisma.customer.findUnique({
       where: { id },
-      select: CUSTOMER_SELECT,
+      select: CUSTOMER_DETAIL_SELECT,
     });
 
     if (!customer) {

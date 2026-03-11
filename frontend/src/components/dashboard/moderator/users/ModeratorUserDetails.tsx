@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import AddNewUserModal from '@/components/dashboard/moderator/modals/AddNewUserModal';
 import AssignSupervisorModal from '@/components/dashboard/moderator/modals/AssignSupervisorModal';
 import ConfirmAlertDialog from '@/components/common/modals/ConfirmAlertDialog';
@@ -55,6 +56,7 @@ type ModeratorUserDetailsProps = {
 };
 
 const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
+  const router = useRouter();
   const [isAssignSupervisorModalOpen, setIsAssignSupervisorModalOpen] =
     useState(false);
   const [isAssignAgentModalOpen, setIsAssignAgentModalOpen] = useState(false);
@@ -90,6 +92,15 @@ const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
       )
     : [];
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.push('/dashboard/moderator/users');
+  };
+
   if (isLoading) {
     return (
       <div className='space-y-6'>
@@ -107,11 +118,9 @@ const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
   if (!user || isError) {
     return (
       <div className='space-y-4'>
-        <Button variant='outline' asChild>
-          <Link href='/dashboard/moderator/users'>
-            <ArrowLeft />
-            Back to users
-          </Link>
+        <Button variant='outline' type='button' onClick={handleBack}>
+          <ArrowLeft />
+          Back
         </Button>
 
         <Card>
@@ -163,11 +172,9 @@ const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
   return (
     <>
       <div className='space-y-6'>
-        <Button variant='link' asChild>
-          <Link href='/dashboard/moderator/users'>
-            <ArrowLeft />
-            Back to users
-          </Link>
+        <Button variant='link' type='button' onClick={handleBack}>
+          <ArrowLeft />
+          Back
         </Button>
 
         <Card className='overflow-hidden rounded-2xl border-border/70 shadow-sm'>

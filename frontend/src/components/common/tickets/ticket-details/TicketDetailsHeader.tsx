@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, MessageSquarePlus, Pencil, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -30,14 +30,23 @@ const TicketDetailsHeader = ({
   onEditDetails,
   onDeleteTicket,
 }: TicketDetailsHeaderProps) => {
+  const router = useRouter();
+
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.push('/dashboard/moderator/tickets');
+  };
+
   return (
     <div className='flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between'>
       <div className='space-y-3'>
-        <Button variant='link' asChild>
-          <Link href='/dashboard/moderator/tickets'>
-            <ArrowLeft />
-            Back to tickets
-          </Link>
+        <Button variant='link' type='button' onClick={handleBack}>
+          <ArrowLeft />
+          Back
         </Button>
 
         <div className='space-y-3'>

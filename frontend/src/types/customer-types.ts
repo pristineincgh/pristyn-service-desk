@@ -1,3 +1,5 @@
+import { TicketPriority, TicketStatus } from './ticket-types';
+
 export interface Customer {
   id: string;
   name: string;
@@ -5,6 +7,28 @@ export interface Customer {
   phone: string;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CustomerTicketSummary {
+  id: string;
+  ticketNumber: string;
+  title: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  createdAt: string;
+  updatedAt: string;
+  ticketCategory: {
+    id: string;
+    name: string;
+  } | null;
+  assignedTo: {
+    id: string;
+    name: string;
+  } | null;
+}
+
+export interface CustomerDetail extends Customer {
+  tickets: CustomerTicketSummary[];
 }
 
 export interface CustomerListResponse {

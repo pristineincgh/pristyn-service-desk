@@ -3,6 +3,7 @@ import {
   CreateCustomerPayload,
   CreateCustomerResponse,
   Customer,
+  CustomerDetail,
   CustomerListResponse,
   DeleteCustomerResponse,
   UpdateCustomerPayload,
@@ -21,7 +22,7 @@ export const getCustomers = async (
   return apiFetch(`${BASE_URL}${query}`);
 };
 
-export const getCustomer = async (id: string): Promise<Customer> => {
+export const getCustomer = async (id: string): Promise<CustomerDetail> => {
   return apiFetch(`${BASE_URL}/${encodeURIComponent(id)}`);
 };
 

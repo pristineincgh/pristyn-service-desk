@@ -1,6 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import * as endpoints from './endpoints';
-import { Customer, CustomerListResponse } from '@/types/customer-types';
+import {
+  Customer,
+  CustomerDetail,
+  CustomerListResponse,
+} from '@/types/customer-types';
 
 export const customerQueryKeys = {
   all: ['customers'] as const,
@@ -15,7 +19,7 @@ export const useCustomersQuery = (search?: string) =>
   });
 
 export const useCustomerQuery = (id: string) =>
-  useQuery<Customer>({
+  useQuery<CustomerDetail>({
     queryKey: customerQueryKeys.detail(id),
     queryFn: () => endpoints.getCustomer(id),
     enabled: !!id,
