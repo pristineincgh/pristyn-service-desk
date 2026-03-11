@@ -144,8 +144,10 @@ const AddNewUserModal = ({ open, onOpenChange }: AddNewUserModalProps) => {
       if (hasSupervisorSelection) {
         try {
           await assignSupervisorMutation.mutateAsync({
-            agentId: createResponse.user.id,
-            supervisorId: data.supervisorId!.trim(),
+            id: createResponse.user.id,
+            data: {
+              supervisorId: data.supervisorId!.trim(),
+            },
           });
 
           toast.success('User created and assigned to supervisor successfully');

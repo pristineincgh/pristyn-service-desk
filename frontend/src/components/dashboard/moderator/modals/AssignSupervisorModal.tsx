@@ -34,6 +34,11 @@ import { z } from 'zod';
 interface AssignSupervisorModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  agent?: {
+    id: string;
+    name: string;
+  };
+  forAgent?: boolean;
 }
 
 const assignSupervisorSchema = z.object({
@@ -46,6 +51,8 @@ type AssignSupervisorFormData = z.infer<typeof assignSupervisorSchema>;
 const AssignSupervisorModal = ({
   open,
   onOpenChange,
+  agent,
+  forAgent = false,
 }: AssignSupervisorModalProps) => {
   const assignSupervisorMutation = useAssignSupervisor();
   const { data: activeUsersResponse, isLoading: isActiveUsersLoading } =
@@ -75,8 +82,8 @@ const AssignSupervisorModal = ({
   } = useForm<AssignSupervisorFormData>({
     resolver: zodResolver(assignSupervisorSchema),
     defaultValues: {
-      agentId: '',
-      supervisorId: '',
+      agentId: forAgent ? agent?.id : '',
+      supervisorId: forAgent ? '' : agent?.id,
     },
   });
 
@@ -96,7 +103,12 @@ const AssignSupervisorModal = ({
 
   const onSubmit = async (data: AssignSupervisorFormData) => {
     try {
-      const response = await assignSupervisorMutation.mutateAsync(data);
+      const response = await assignSupervisorMutation.mutateAsync({
+        id: data.agentId,
+        data: {
+          supervisorId: data.supervisorId,
+        },
+      });
       toast.success(response.message || 'Supervisor assigned successfully');
       handleDialogOpenChange(false);
     } catch {
@@ -115,7 +127,9 @@ const AssignSupervisorModal = ({
         <DialogHeader>
           <DialogTitle>Assign Supervisor</DialogTitle>
           <DialogDescription>
-            Link an agent to the correct supervisor for scope and oversight.
+            {agent
+              ? `Link ${agent.name} to the correct supervisor for scope and oversight.`
+              : 'Link an agent to the correct supervisor for scope and oversight.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -130,7 +144,7 @@ const AssignSupervisorModal = ({
                   <Select
                     value={field.value || undefined}
                     onValueChange={field.onChange}
-                    disabled={isFormBusy}
+                    disabled={isFormBusy || (forAgent && !!agent)}
                   >
                     <SelectTrigger className='w-full'>
                       <SelectValue
@@ -165,7 +179,7 @@ const AssignSupervisorModal = ({
                   <Select
                     value={field.value || undefined}
                     onValueChange={field.onChange}
-                    disabled={isFormBusy}
+                    disabled={isFormBusy || (!forAgent && !!agent)}
                   >
                     <SelectTrigger className='w-full'>
                       <SelectValue

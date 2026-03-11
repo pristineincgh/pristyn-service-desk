@@ -64,7 +64,7 @@ const formatTicketDate = (value: string) =>
   });
 
 const ticketHref = (ticketId: string): string =>
-  `/dashboard/moderator/tickets?ticketId=${encodeURIComponent(ticketId)}`;
+  `/dashboard/moderator/tickets/${ticketId}`;
 
 const LatestTicketsTable = ({
   tickets,

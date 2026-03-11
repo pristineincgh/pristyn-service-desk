@@ -9,6 +9,7 @@ export interface SafeUser {
   phone: string | null;
   emailVerified: boolean;
   status: UserStatus;
+  supervisorId: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
