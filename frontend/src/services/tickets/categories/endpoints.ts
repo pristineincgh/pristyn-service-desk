@@ -1,5 +1,12 @@
 import { apiFetch } from '@/lib/api';
-import { TicketCategory } from '@/types/ticket-types';
+import {
+  CreateTicketCategoryPayload,
+  DeleteTicketCategoryResponse,
+  TicketCategory,
+  TicketCategoryDetail,
+  UpdateTicketCategoryPayload,
+  UpdateTicketCategoryResponse,
+} from '@/types/ticket-types';
 
 const BASE_URL = '/api/ticket-categories';
 
@@ -16,16 +23,35 @@ export const getTicketCategories = async (): Promise<TicketCategory[]> => {
 
 export const getTicketCategory = async (
   id: string
-): Promise<TicketCategory> => {
+): Promise<TicketCategoryDetail> => {
   return apiFetch(`${BASE_URL}/${id}`);
 };
 
 export const createTicketCategory = async (
-  data: Partial<TicketCategory>
+  data: CreateTicketCategoryPayload
 ): Promise<TicketCategory> => {
   return apiFetch(BASE_URL, {
     method: 'POST',
     body: JSON.stringify(data),
     headers: { 'Content-Type': 'application/json' },
+  });
+};
+
+export const updateTicketCategory = async (
+  id: string,
+  data: UpdateTicketCategoryPayload
+): Promise<UpdateTicketCategoryResponse> => {
+  return apiFetch(`${BASE_URL}/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+    headers: { 'Content-Type': 'application/json' },
+  });
+};
+
+export const deleteTicketCategory = async (
+  id: string
+): Promise<DeleteTicketCategoryResponse> => {
+  return apiFetch(`${BASE_URL}/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
   });
 };

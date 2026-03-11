@@ -3,28 +3,114 @@ import { CreateTicketCategoryDto } from './dto/create-ticket-category.dto';
 import { UpdateTicketCategoryDto } from './dto/update-ticket-category.dto';
 import { PrismaService } from 'src/prisma.service';
 
+const TICKET_CATEGORY_LIST_SELECT = {
+  id: true,
+  name: true,
+  createdAt: true,
+  updatedAt: true,
+  _count: {
+    select: {
+      tickets: true,
+    },
+  },
+} as const;
+
+const TICKET_CATEGORY_DETAIL_SELECT = {
+  ...TICKET_CATEGORY_LIST_SELECT,
+  tickets: {
+    orderBy: {
+      createdAt: 'desc',
+    },
+    select: {
+      id: true,
+      ticketNumber: true,
+      title: true,
+      status: true,
+      priority: true,
+      createdAt: true,
+      updatedAt: true,
+      customer: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      assignedTo: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  },
+} as const;
+
 @Injectable()
 export class TicketCategoriesService {
   constructor(private prisma: PrismaService) {}
 
+  private normalizeName(name: string) {
+    return name.trim();
+  }
+
+  private normalizeCategory(category: {
+    id: string;
+    name: string;
+    createdAt: Date;
+    updatedAt: Date;
+    _count?: {
+      tickets: number;
+    };
+  }) {
+    return {
+      id: category.id,
+      name: category.name,
+      createdAt: category.createdAt,
+      updatedAt: category.updatedAt,
+      ticketCount: category._count?.tickets ?? 0,
+    };
+  }
+
   async create(createTicketCategoryDto: CreateTicketCategoryDto) {
+    const name = this.normalizeName(createTicketCategoryDto.name);
+
     try {
-      return await this.prisma.ticketCategory.create({
-        data: { name: createTicketCategoryDto.name },
+      const category = await this.prisma.ticketCategory.create({
+        data: { name },
+        select: TICKET_CATEGORY_LIST_SELECT,
       });
+
+      return this.normalizeCategory(category);
     } catch {
       throw new BadRequestException('Category already exists');
     }
   }
 
-  findAll() {
-    return this.prisma.ticketCategory.findMany();
+  async findAll() {
+    const categories = await this.prisma.ticketCategory.findMany({
+      select: TICKET_CATEGORY_LIST_SELECT,
+      orderBy: {
+        name: 'asc',
+      },
+    });
+
+    return categories.map((category) => this.normalizeCategory(category));
   }
 
   async findOne(id: string) {
-    return this.prisma.ticketCategory.findUnique({
+    const category = await this.prisma.ticketCategory.findUnique({
       where: { id },
+      select: TICKET_CATEGORY_DETAIL_SELECT,
     });
+
+    if (!category) {
+      return null;
+    }
+
+    return {
+      ...this.normalizeCategory(category),
+      tickets: category.tickets,
+    };
   }
 
   async update(id: string, updateTicketCategoryDto: UpdateTicketCategoryDto) {
@@ -34,10 +120,21 @@ export class TicketCategoriesService {
       throw new BadRequestException('Category not found');
     }
 
-    return this.prisma.ticketCategory.update({
-      where: { id },
-      data: updateTicketCategoryDto,
-    });
+    try {
+      const updatedCategory = await this.prisma.ticketCategory.update({
+        where: { id },
+        data: {
+          ...(updateTicketCategoryDto.name !== undefined
+            ? { name: this.normalizeName(updateTicketCategoryDto.name) }
+            : {}),
+        },
+        select: TICKET_CATEGORY_LIST_SELECT,
+      });
+
+      return this.normalizeCategory(updatedCategory);
+    } catch {
+      throw new BadRequestException('Category already exists');
+    }
   }
 
   async remove(id: string) {

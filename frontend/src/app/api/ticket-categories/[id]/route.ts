@@ -19,3 +19,32 @@ export async function GET(
     serviceName: 'tickets service',
   });
 }
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: TicketCategoryRouteParams
+) {
+  const { id } = await params;
+
+  return proxyApiRequest(request, {
+    path: `/ticket-categories/${encodeURIComponent(id)}`,
+    method: 'PATCH',
+    parseRequestBody: true,
+    serviceName: 'tickets service',
+    parseResponseErrorMessage:
+      'Unable to parse ticket category update response',
+  });
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: TicketCategoryRouteParams
+) {
+  const { id } = await params;
+
+  return proxyApiRequest(request, {
+    path: `/ticket-categories/${encodeURIComponent(id)}`,
+    method: 'DELETE',
+    serviceName: 'tickets service',
+  });
+}

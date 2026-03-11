@@ -1,4 +1,10 @@
-import { LayoutDashboard, Tickets, Users, UsersRound } from 'lucide-react';
+import {
+  FolderClosed,
+  LayoutDashboard,
+  Tickets,
+  Users,
+  UsersRound,
+} from 'lucide-react';
 
 export const supportNavItems = [
   {
@@ -36,5 +42,10 @@ export const moderatorNavItems = [
     label: 'Customers',
     icon: UsersRound,
     href: '/dashboard/moderator/customers',
+  },
+  {
+    label: 'Ticket Categories',
+    icon: FolderClosed,
+    href: '/dashboard/moderator/ticket-categories',
   },
 ];

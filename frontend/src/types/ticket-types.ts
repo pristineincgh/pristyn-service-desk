@@ -3,6 +3,46 @@ export interface TicketCategory {
   name: string;
   createdAt: Date;
   updatedAt: Date;
+  ticketCount?: number;
+}
+
+export interface TicketCategoryTicketSummary {
+  id: string;
+  ticketNumber: string;
+  title: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  createdAt: string;
+  updatedAt: string;
+  customer: {
+    id: string;
+    name: string;
+  };
+  assignedTo: {
+    id: string;
+    name: string;
+  } | null;
+}
+
+export interface TicketCategoryDetail extends TicketCategory {
+  tickets: TicketCategoryTicketSummary[];
+}
+
+export interface CreateTicketCategoryPayload {
+  name: string;
+}
+
+export interface UpdateTicketCategoryPayload {
+  name?: string;
+}
+
+export interface UpdateTicketCategoryResponse {
+  message: string;
+  data: TicketCategory;
+}
+
+export interface DeleteTicketCategoryResponse {
+  message: string;
 }
 
 export interface TicketCategoryRef {
