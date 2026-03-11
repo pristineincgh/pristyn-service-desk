@@ -521,10 +521,53 @@ export class TicketsService {
 
   async findAllTickets(currentUserId: string, query: FindAllTicketsQueryDto) {
     const requester = await this.getRequesterOrThrow(currentUserId);
-    const where = this.getTicketScopeWhere({
+    const scopeWhere = this.getTicketScopeWhere({
       id: requester.id,
       role: requester.role,
     });
+    const filters: Prisma.TicketWhereInput[] = [scopeWhere];
+
+    if (query.categoryId) {
+      filters.push({
+        ticketCategoryId: query.categoryId,
+      });
+    }
+
+    if (query.status) {
+      filters.push({
+        status: query.status,
+      });
+    }
+
+    if (query.priority) {
+      filters.push({
+        priority: query.priority,
+      });
+    }
+
+    if (query.search) {
+      filters.push({
+        OR: [
+          {
+            ticketNumber: {
+              contains: query.search,
+              mode: Prisma.QueryMode.insensitive,
+            },
+          },
+          {
+            customer: {
+              name: {
+                contains: query.search,
+                mode: Prisma.QueryMode.insensitive,
+              },
+            },
+          },
+        ],
+      });
+    }
+
+    const where: Prisma.TicketWhereInput =
+      filters.length === 1 ? filters[0] : { AND: filters };
 
     const take = Math.min(Math.max(query.limit ?? 20, 1), 100);
     const page = Math.max(query.page ?? 1, 1);
