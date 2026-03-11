@@ -9,7 +9,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field';
 import {
   Select,
   SelectContent,
@@ -101,7 +106,12 @@ const AssignSupervisorModal = ({
 
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className='sm:max-w-lg'>
+      <DialogContent
+        className='sm:max-w-lg'
+        onInteractOutside={(e) => {
+          if (isFormBusy) e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Assign Supervisor</DialogTitle>
           <DialogDescription>
@@ -181,9 +191,11 @@ const AssignSupervisorModal = ({
               )}
             />
 
-            {(agents.length === 0 || supervisors.length === 0) && !isActiveUsersLoading ? (
+            {(agents.length === 0 || supervisors.length === 0) &&
+            !isActiveUsersLoading ? (
               <p className='text-sm text-muted-foreground'>
-                You need at least one active agent and one active supervisor to create an assignment.
+                You need at least one active agent and one active supervisor to
+                create an assignment.
               </p>
             ) : null}
           </FieldGroup>
@@ -199,7 +211,9 @@ const AssignSupervisorModal = ({
             </Button>
             <Button
               type='submit'
-              disabled={isFormBusy || agents.length === 0 || supervisors.length === 0}
+              disabled={
+                isFormBusy || agents.length === 0 || supervisors.length === 0
+              }
             >
               {assignSupervisorMutation.isPending
                 ? 'Assigning supervisor...'

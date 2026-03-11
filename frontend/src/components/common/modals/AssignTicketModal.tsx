@@ -179,7 +179,12 @@ const AssignTicketModal = ({
 
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className='sm:max-w-lg'>
+      <DialogContent
+        className='sm:max-w-lg'
+        onInteractOutside={(e) => {
+          if (isFormBusy) e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Assign Ticket</DialogTitle>
           <DialogDescription>

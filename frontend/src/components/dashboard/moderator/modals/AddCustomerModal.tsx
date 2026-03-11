@@ -9,7 +9,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { useCreateCustomer } from '@/services/customers/mutations';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,7 +30,9 @@ interface AddCustomerModalProps {
 const addCustomerSchema = z.object({
   name: z.string().trim().min(1, 'Please enter customer name'),
   phone: z.string().trim().min(1, 'Please enter customer phone number'),
-  email: z.union([z.email('Please enter a valid email'), z.literal('')]).optional(),
+  email: z
+    .union([z.email('Please enter a valid email'), z.literal('')])
+    .optional(),
 });
 
 type AddCustomerFormData = z.infer<typeof addCustomerSchema>;
@@ -74,7 +81,12 @@ const AddCustomerModal = ({ open, onOpenChange }: AddCustomerModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className='sm:max-w-lg'>
+      <DialogContent
+        className='sm:max-w-lg'
+        onInteractOutside={(e) => {
+          if (isFormBusy) e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Add Customer</DialogTitle>
           <DialogDescription>
@@ -132,7 +144,9 @@ const AddCustomerModal = ({ open, onOpenChange }: AddCustomerModalProps) => {
               Cancel
             </Button>
             <Button type='submit' disabled={isFormBusy}>
-              {createCustomerMutation.isPending ? 'Adding customer...' : 'Add Customer'}
+              {createCustomerMutation.isPending
+                ? 'Adding customer...'
+                : 'Add Customer'}
             </Button>
           </DialogFooter>
         </form>

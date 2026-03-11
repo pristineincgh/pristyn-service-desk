@@ -100,7 +100,12 @@ const AddTicketNoteModal = ({
 
   return (
     <Dialog open={open} onOpenChange={handleDialogOpenChange}>
-      <DialogContent className='sm:max-w-lg'>
+      <DialogContent
+        className='sm:max-w-lg'
+        onInteractOutside={(e) => {
+          if (isFormBusy) e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Add Ticket Note</DialogTitle>
           <DialogDescription>
@@ -150,7 +155,9 @@ const AddTicketNoteModal = ({
                       <Checkbox
                         id='ticket-note-internal'
                         checked={field.value}
-                        onCheckedChange={(checked) => field.onChange(checked === true)}
+                        onCheckedChange={(checked) =>
+                          field.onChange(checked === true)
+                        }
                         disabled={isFormBusy}
                       />
                       Internal note (not customer-visible)
@@ -170,7 +177,9 @@ const AddTicketNoteModal = ({
                 Cancel
               </Button>
               <Button type='submit' disabled={isFormBusy}>
-                {createTicketNoteMutation.isPending ? 'Adding note...' : 'Add Note'}
+                {createTicketNoteMutation.isPending
+                  ? 'Adding note...'
+                  : 'Add Note'}
               </Button>
             </DialogFooter>
           </form>

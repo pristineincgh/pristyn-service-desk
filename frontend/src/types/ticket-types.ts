@@ -86,6 +86,13 @@ export interface TicketListResponse {
   tickets: TicketShort[];
 }
 
+export interface TicketListFilters {
+  categoryId?: string;
+  status?: TicketStatus;
+  priority?: TicketPriority;
+  search?: string;
+}
+
 export interface CreateTicketPayload {
   title: string;
   description: string;

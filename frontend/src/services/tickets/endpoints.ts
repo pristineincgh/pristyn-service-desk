@@ -8,6 +8,7 @@ import {
   CreateTicketPayload,
   DeleteTicketResponse,
   TicketDetail,
+  TicketListFilters,
   TicketNote,
   TicketPriority,
   TicketListResponse,
@@ -85,12 +86,31 @@ const normalizeTicket = (ticket: TicketApiRecord): TicketDetail => ({
 
 export const getTickets = async (
   page = 1,
-  limit = 20
+  limit = 20,
+  filters: TicketListFilters = {}
 ): Promise<TicketListResponse> => {
-  const query = new URLSearchParams({
+  const queryParams = new URLSearchParams({
     page: String(page),
     limit: String(limit),
-  }).toString();
+  });
+
+  if (filters.categoryId) {
+    queryParams.set('categoryId', filters.categoryId);
+  }
+
+  if (filters.status) {
+    queryParams.set('status', filters.status);
+  }
+
+  if (filters.priority) {
+    queryParams.set('priority', filters.priority);
+  }
+
+  if (filters.search) {
+    queryParams.set('search', filters.search);
+  }
+
+  const query = queryParams.toString();
 
   const response = await apiFetch<TicketListApiResponse>(`${BASE_URL}?${query}`);
 
