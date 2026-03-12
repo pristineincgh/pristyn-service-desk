@@ -4,6 +4,10 @@ import {
   AssignSupervisorResponse,
   CreateUserPayload,
   CreateUserResponse,
+  ResetUserPasswordResponse,
+  UpdateUserPayload,
+  UpdateUserResponse,
+  UpdateUserStatusPayload,
   UserDetail,
   UserListResponse,
 } from '@/types/user-types';
@@ -41,11 +45,42 @@ export const createUser = async (
 };
 
 export const assignSupervisor = async (
+  id: string,
   data: AssignSupervisorPayload
 ): Promise<AssignSupervisorResponse> => {
-  return apiFetch(`${BASE_URL}/assign-supervisor`, {
+  return apiFetch(`${BASE_URL}/${encodeURIComponent(id)}/assign-supervisor`, {
     method: 'PATCH',
     body: JSON.stringify(data),
     headers: { 'Content-Type': 'application/json' },
+  });
+};
+
+export const updateUser = async (
+  id: string,
+  data: UpdateUserPayload
+): Promise<UpdateUserResponse> => {
+  return apiFetch(`${BASE_URL}/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+    headers: { 'Content-Type': 'application/json' },
+  });
+};
+
+export const updateUserStatus = async (
+  id: string,
+  data: UpdateUserStatusPayload
+): Promise<UpdateUserResponse> => {
+  return apiFetch(`${BASE_URL}/${encodeURIComponent(id)}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+    headers: { 'Content-Type': 'application/json' },
+  });
+};
+
+export const resetUserPassword = async (
+  id: string
+): Promise<ResetUserPasswordResponse> => {
+  return apiFetch(`${BASE_URL}/${encodeURIComponent(id)}/reset-password`, {
+    method: 'POST',
   });
 };

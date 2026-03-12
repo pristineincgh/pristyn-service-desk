@@ -1,4 +1,6 @@
+import ModeratorDashboardContent from '@/components/dashboard/moderator/ModeratorDashboardContent';
+
 const ModeratorDashboardPage = () => {
-  return <div>ModeratorDashboardPage</div>;
+  return <ModeratorDashboardContent />;
 };
 export default ModeratorDashboardPage;

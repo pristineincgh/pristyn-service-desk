@@ -1,7 +1,7 @@
 import { UserRole } from '@/types/user-types';
 
 export const DASHBOARD_ROUTES: Record<UserRole, string> = {
-  [UserRole.SUPPORT_STAFF]: '/dashboard/support',
+  [UserRole.AGENT]: '/dashboard/support',
   [UserRole.SUPERVISOR]: '/dashboard/supervisor',
   [UserRole.MODERATOR]: '/dashboard/moderator',
 };

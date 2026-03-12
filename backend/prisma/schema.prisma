@@ -13,7 +13,7 @@ model User {
   name          String
   email         String     @unique
   password      String
-  role          UserRole   @default(SUPPORT_STAFF)
+  role          UserRole   @default(AGENT)
   phone         String?
   emailVerified Boolean    @default(false)
   status        UserStatus @default(ACTIVE)
@@ -21,8 +21,8 @@ model User {
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
-  supervisor      User?         @relation("SupervisorToSupportStaff", fields: [supervisorId], references: [id])
-  supportStaffs   User[]        @relation("SupervisorToSupportStaff")
+  supervisor      User?         @relation("SupervisorToAgent", fields: [supervisorId], references: [id])
+  agents          User[]        @relation("SupervisorToAgent")
   assignedTickets Ticket[]      @relation("TicketAssignee")
   createdTickets  Ticket[]      @relation("TicketCreator")
   updatedTickets  Ticket[]      @relation("TicketUpdater")
@@ -56,7 +56,7 @@ model Ticket {
   description       String
   status            TicketStatus @default(OPEN)
   priority          Priority     @default(LOW)
-  ticketIssueTypeId String
+  ticketCategoryId String
   customerId        String
   assignedToId      String?
   createdById       String
@@ -64,7 +64,7 @@ model Ticket {
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
 
-  ticketIssueType TicketIssueType @relation(fields: [ticketIssueTypeId], references: [id])
+  ticketCategory TicketCategory @relation(fields: [ticketCategoryId], references: [id])
   customer        Customer        @relation(fields: [customerId], references: [id])
   assignedTo      User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
   createdBy       User            @relation("TicketCreator", fields: [createdById], references: [id])
@@ -73,7 +73,7 @@ model Ticket {
   activities      ActivityLog[]
 
   @@index([ticketNumber])
-  @@index([ticketIssueTypeId])
+  @@index([ticketCategoryId])
   @@index([customerId])
   @@index([assignedToId])
   @@index([createdById])
@@ -103,7 +103,7 @@ model ActivityLog {
   @@index([userId])
 }
 
-model TicketIssueType {
+model TicketCategory {
   id        String   @id @default(uuid())
   name      String   @unique
   createdAt DateTime @default(now())
@@ -146,7 +146,7 @@ enum TicketStatus {
 }
 
 enum UserRole {
-  SUPPORT_STAFF
+  AGENT
   SUPERVISOR
   MODERATOR
 }
@@ -159,6 +159,8 @@ enum UserStatus {
 enum ActivityEntityType {
   TICKET
   USER
+  CUSTOMER
+  TICKET_CATEGORY
   SYSTEM
 }
 
@@ -171,4 +173,14 @@ enum ActivityLogAction {
   TICKET_DELETED
   USER_CREATED
   USER_ASSIGNED_TO_SUPERVISOR
+  USER_STATUS_CHANGED
+  USER_PASSWORD_RESET
+  USER_LOGGED_IN
+  USER_LOGGED_OUT
+  CUSTOMER_CREATED
+  CUSTOMER_UPDATED
+  CUSTOMER_DELETED
+  TICKET_CATEGORY_CREATED
+  TICKET_CATEGORY_UPDATED
+  TICKET_CATEGORY_DELETED
 }

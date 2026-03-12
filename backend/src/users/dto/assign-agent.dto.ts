@@ -1,10 +1,6 @@
 import { IsNotEmpty, IsString } from 'class-validator';
 
-export class AssignSupportStaffDto {
-  @IsString()
-  @IsNotEmpty()
-  supportStaffId!: string;
-
+export class AssignAgentDto {
   @IsString()
   @IsNotEmpty()
   supervisorId!: string;

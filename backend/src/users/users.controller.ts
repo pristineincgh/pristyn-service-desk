@@ -15,7 +15,9 @@ import { UserRole } from 'src/generated/prisma/enums';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import type { AuthenticatedUser } from 'src/auth/types/user.types';
-import { AssignSupportStaffDto } from './dto/assign-support-staff.dto';
+import { AssignAgentDto } from './dto/assign-agent.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 
 @Controller('users')
 export class UsersController {
@@ -51,6 +53,77 @@ export class UsersController {
 
   @UseGuards(SessionAuthGuard, RolesGuard)
   @Roles(UserRole.MODERATOR)
+  @Patch(':id/assign-supervisor')
+  async assignAgentToSupervisor(
+    @Param('id') id: string,
+    @Body() dto: AssignAgentDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const agent = await this.usersService.assignAgentToSupervisor(
+      id,
+      dto,
+      user.id,
+    );
+
+    return {
+      message: 'Agent assigned to supervisor successfully.',
+      user: agent,
+    };
+  }
+
+  @UseGuards(SessionAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  @Patch(':id')
+  async updateUser(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const updatedUser = await this.usersService.updateUser(id, dto, user.id);
+
+    return {
+      message: 'User updated successfully.',
+      user: updatedUser,
+    };
+  }
+
+  @UseGuards(SessionAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  @Patch(':id/status')
+  async updateUserStatus(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserStatusDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const updatedUser = await this.usersService.updateUserStatus(
+      id,
+      dto.status,
+      user.id,
+    );
+
+    return {
+      message: 'User status updated successfully.',
+      user: updatedUser,
+    };
+  }
+
+  @UseGuards(SessionAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  @Post(':id/reset-password')
+  async resetUserPassword(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.usersService.resetUserPassword(id, user.id);
+
+    return {
+      message: 'User password reset successfully.',
+      ...result,
+    };
+  }
+
+  @UseGuards(SessionAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
   @Get('inactive')
   async getInactiveUsers() {
     return this.usersService.getAllInActiveUsers();
@@ -69,24 +142,6 @@ export class UsersController {
       message: 'User created successfully.',
       user: createResult.user,
       defaultPassword: createResult.defaultPassword,
-    };
-  }
-
-  @UseGuards(SessionAuthGuard, RolesGuard)
-  @Roles(UserRole.MODERATOR)
-  @Patch('assign-supervisor')
-  async assignSupportStaffToSupervisor(
-    @Body() dto: AssignSupportStaffDto,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    const supportStaff = await this.usersService.assignSupportStaffToSupervisor(
-      dto,
-      user.id,
-    );
-
-    return {
-      message: 'Support staff assigned to supervisor successfully.',
-      user: supportStaff,
     };
   }
 }

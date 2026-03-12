@@ -7,7 +7,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
-import { AssignSupportStaffDto } from './dto/assign-support-staff.dto';
+import { AssignAgentDto } from './dto/assign-agent.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { randomInt } from 'crypto';
 import { User } from 'src/generated/prisma/client';
@@ -15,6 +16,7 @@ import {
   ActivityEntityType,
   ActivityLogAction,
   UserRole,
+  UserStatus,
 } from 'src/generated/prisma/enums';
 import { PrismaService } from 'src/prisma.service';
 import { SafeUser } from 'src/auth/types/user.types';
@@ -37,12 +39,27 @@ export class UsersService {
     phone: true,
     status: true,
     emailVerified: true,
+    supervisorId: true,
     createdAt: true,
     updatedAt: true,
   } as const;
 
   private getRandomCharacter(charset: string) {
     return charset[randomInt(0, charset.length)];
+  }
+
+  private normalizeOptionalString(value?: string | null) {
+    if (value === undefined) {
+      return undefined;
+    }
+
+    if (value === null) {
+      return null;
+    }
+
+    const normalized = value.trim();
+
+    return normalized.length > 0 ? normalized : null;
   }
 
   private generateUserDefaultPassword() {
@@ -201,7 +218,8 @@ export class UsersService {
       throw new ConflictException('User with this email already exists');
     }
 
-    const defaultPassword = this.generateUserDefaultPassword();
+    // const defaultPassword = this.generateUserDefaultPassword();
+    const defaultPassword = 'P@ssw0rd';
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
     // Create user
@@ -238,19 +256,20 @@ export class UsersService {
     };
   }
 
-  async assignSupportStaffToSupervisor(
-    dto: AssignSupportStaffDto,
+  async assignAgentToSupervisor(
+    agentId: string,
+    dto: AssignAgentDto,
     actorId?: string,
   ) {
-    if (dto.supportStaffId === dto.supervisorId) {
+    if (agentId === dto.supervisorId) {
       throw new BadRequestException(
-        'Support staff and supervisor cannot be the same user',
+        'Agent and supervisor cannot be the same user',
       );
     }
 
-    const [supportStaff, supervisor] = await Promise.all([
+    const [agent, supervisor] = await Promise.all([
       this.prisma.user.findUnique({
-        where: { id: dto.supportStaffId },
+        where: { id: agentId },
         select: {
           id: true,
           role: true,
@@ -261,20 +280,21 @@ export class UsersService {
         select: {
           id: true,
           role: true,
+          status: true,
         },
       }),
     ]);
 
-    if (!supportStaff) {
-      throw new NotFoundException('Support staff does not exist');
+    if (!agent) {
+      throw new NotFoundException('Agent does not exist');
     }
 
     if (!supervisor) {
       throw new NotFoundException('Supervisor does not exist');
     }
 
-    if (supportStaff.role !== UserRole.SUPPORT_STAFF) {
-      throw new BadRequestException('User to assign must be a support staff');
+    if (agent.role !== UserRole.AGENT) {
+      throw new BadRequestException('User to assign must be an agent');
     }
 
     if (supervisor.role !== UserRole.SUPERVISOR) {
@@ -283,8 +303,12 @@ export class UsersService {
       );
     }
 
+    if (supervisor.status !== UserStatus.ACTIVE) {
+      throw new BadRequestException('Assigned supervisor must be active');
+    }
+
     const user = await this.prisma.user.update({
-      where: { id: supportStaff.id },
+      where: { id: agent.id },
       data: { supervisorId: supervisor.id },
       select: {
         ...this.safeUserSelect,
@@ -310,6 +334,276 @@ export class UsersService {
     });
 
     return user;
+  }
+
+  async updateUser(userId: string, dto: UpdateUserDto, actorId: string) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: this.safeUserSelect,
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException('User does not exist');
+    }
+
+    if (
+      actorId === userId &&
+      dto.role !== undefined &&
+      dto.role !== existingUser.role
+    ) {
+      throw new BadRequestException('You cannot change your own role');
+    }
+
+    const normalizedName = this.normalizeOptionalString(dto.name);
+    const normalizedEmail = this.normalizeOptionalString(dto.email);
+    const normalizedPhone = this.normalizeOptionalString(dto.phone);
+    const normalizedSupervisorId = this.normalizeOptionalString(
+      dto.supervisorId,
+    );
+    const nextRole = dto.role ?? existingUser.role;
+
+    if (normalizedName === null) {
+      throw new BadRequestException('Name cannot be empty');
+    }
+
+    if (normalizedEmail === null) {
+      throw new BadRequestException('Email cannot be empty');
+    }
+
+    if (normalizedSupervisorId === userId) {
+      throw new BadRequestException('User cannot supervise themselves');
+    }
+
+    const nextEmail =
+      normalizedEmail !== undefined
+        ? normalizedEmail.toLowerCase()
+        : existingUser.email;
+
+    if (nextEmail !== existingUser.email) {
+      const duplicateUser = await this.findByEmail(nextEmail);
+
+      if (duplicateUser && duplicateUser.id !== userId) {
+        throw new ConflictException('User with this email already exists');
+      }
+    }
+
+    let validatedSupervisorId: string | null | undefined =
+      normalizedSupervisorId;
+
+    if (nextRole !== UserRole.AGENT) {
+      validatedSupervisorId = null;
+    } else if (validatedSupervisorId !== undefined && validatedSupervisorId) {
+      const supervisor = await this.prisma.user.findUnique({
+        where: { id: validatedSupervisorId },
+        select: {
+          id: true,
+          role: true,
+          status: true,
+        },
+      });
+
+      if (!supervisor) {
+        throw new NotFoundException('Supervisor does not exist');
+      }
+
+      if (supervisor.role !== UserRole.SUPERVISOR) {
+        throw new BadRequestException(
+          'Assigned supervisor must have SUPERVISOR role',
+        );
+      }
+
+      if (supervisor.status !== UserStatus.ACTIVE) {
+        throw new BadRequestException('Assigned supervisor must be active');
+      }
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(normalizedName !== undefined ? { name: normalizedName } : {}),
+        ...(normalizedEmail !== undefined ? { email: nextEmail } : {}),
+        ...(normalizedPhone !== undefined ? { phone: normalizedPhone } : {}),
+        ...(dto.role !== undefined ? { role: dto.role } : {}),
+        ...(dto.emailVerified !== undefined
+          ? { emailVerified: dto.emailVerified }
+          : {}),
+        ...(validatedSupervisorId !== undefined
+          ? { supervisorId: validatedSupervisorId }
+          : {}),
+      },
+      select: this.safeUserSelect,
+    });
+
+    if (
+      validatedSupervisorId !== undefined &&
+      validatedSupervisorId !== existingUser.supervisorId
+    ) {
+      await this.activityService.logActivity({
+        action: ActivityLogAction.USER_ASSIGNED_TO_SUPERVISOR,
+        entityType: ActivityEntityType.USER,
+        entityId: updatedUser.id,
+        actorId,
+        userId: updatedUser.id,
+        metadata: {
+          previousSupervisorId: existingUser.supervisorId,
+          supervisorId: updatedUser.supervisorId,
+        },
+      });
+    }
+
+    return updatedUser;
+  }
+
+  async updateOwnProfile(
+    userId: string,
+    dto: {
+      name?: string | null;
+      email?: string | null;
+      phone?: string | null;
+    },
+  ) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: this.safeUserSelect,
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException('User does not exist');
+    }
+
+    const normalizedName = this.normalizeOptionalString(dto.name);
+    const normalizedEmail = this.normalizeOptionalString(dto.email);
+    const normalizedPhone = this.normalizeOptionalString(dto.phone);
+
+    if (
+      normalizedName === undefined &&
+      normalizedEmail === undefined &&
+      normalizedPhone === undefined
+    ) {
+      throw new BadRequestException('No fields were provided for update');
+    }
+
+    if (normalizedName === null) {
+      throw new BadRequestException('Name cannot be empty');
+    }
+
+    if (normalizedEmail === null) {
+      throw new BadRequestException('Email cannot be empty');
+    }
+
+    const nextEmail =
+      normalizedEmail !== undefined
+        ? normalizedEmail.toLowerCase()
+        : existingUser.email;
+
+    if (nextEmail !== existingUser.email) {
+      const duplicateUser = await this.findByEmail(nextEmail);
+
+      if (duplicateUser && duplicateUser.id !== userId) {
+        throw new ConflictException('User with this email already exists');
+      }
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(normalizedName !== undefined ? { name: normalizedName } : {}),
+        ...(normalizedEmail !== undefined ? { email: nextEmail } : {}),
+        ...(normalizedPhone !== undefined ? { phone: normalizedPhone } : {}),
+      },
+      select: this.safeUserSelect,
+    });
+  }
+
+  async updateUserStatus(userId: string, status: UserStatus, actorId: string) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: this.safeUserSelect,
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException('User does not exist');
+    }
+
+    if (actorId === userId && status === UserStatus.INACTIVE) {
+      throw new BadRequestException('You cannot deactivate your own account');
+    }
+
+    if (existingUser.status === status) {
+      return existingUser;
+    }
+
+    const updatedUser = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        status,
+      },
+      select: this.safeUserSelect,
+    });
+
+    await this.activityService.logActivity({
+      action: ActivityLogAction.USER_STATUS_CHANGED,
+      entityType: ActivityEntityType.USER,
+      entityId: updatedUser.id,
+      actorId,
+      userId: updatedUser.id,
+      metadata: {
+        previousStatus: existingUser.status,
+        status: updatedUser.status,
+      },
+    });
+
+    return updatedUser;
+  }
+
+  async resetUserPassword(userId: string, actorId: string) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+      },
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException('User does not exist');
+    }
+
+    // const defaultPassword = this.generateUserDefaultPassword();
+    const defaultPassword = 'P@ssw0rd';
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashedPassword,
+      },
+    });
+
+    await this.activityService.logActivity({
+      action: ActivityLogAction.USER_PASSWORD_RESET,
+      entityType: ActivityEntityType.USER,
+      entityId: existingUser.id,
+      actorId,
+      userId: existingUser.id,
+      metadata: {
+        email: existingUser.email,
+      },
+    });
+
+    return {
+      userId,
+      defaultPassword,
+    };
+  }
+
+  async updatePasswordHash(userId: string, password: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        password,
+      },
+    });
   }
 
   async getUsersByRoleScope(requesterId: string) {
@@ -344,7 +638,7 @@ export class UsersService {
       };
     }
 
-    if (requester.role === UserRole.SUPPORT_STAFF) {
+    if (requester.role === UserRole.AGENT) {
       if (!requester.supervisorId) {
         return {
           total: 0,
@@ -384,10 +678,10 @@ export class UsersService {
       return this.findPublicById(targetUserId);
     }
 
-    if (requester.role === UserRole.SUPPORT_STAFF) {
+    if (requester.role === UserRole.AGENT) {
       if (requester.supervisorId !== targetUserId) {
         throw new ForbiddenException(
-          'Support staff can only view their assigned supervisor',
+          'Agents can only view their assigned supervisor',
         );
       }
 
@@ -407,7 +701,7 @@ export class UsersService {
     }
 
     if (requester.role === UserRole.SUPERVISOR) {
-      const supportStaff = await this.prisma.user.findFirst({
+      const agent = await this.prisma.user.findFirst({
         where: {
           id: targetUserId,
           supervisorId: requester.id,
@@ -415,13 +709,13 @@ export class UsersService {
         select: this.safeUserSelect,
       });
 
-      if (!supportStaff) {
+      if (!agent) {
         throw new ForbiddenException(
-          'Supervisors can only view their assigned support staff',
+          'Supervisors can only view their assigned agents',
         );
       }
 
-      return supportStaff;
+      return agent;
     }
 
     throw new ForbiddenException('Unsupported user role');

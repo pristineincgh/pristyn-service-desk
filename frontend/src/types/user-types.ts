@@ -1,12 +1,12 @@
 export enum UserRole {
-  SUPPORT_STAFF = 'SUPPORT_STAFF',
-  SUPERVISOR = 'SUPERVISOR',
-  MODERATOR = 'MODERATOR',
+  AGENT = "AGENT",
+  SUPERVISOR = "SUPERVISOR",
+  MODERATOR = "MODERATOR",
 }
 
 export enum UserStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
 }
 
 export interface UserShort {
@@ -20,11 +20,12 @@ export interface UserSummary extends UserShort {
   phone: string | null;
   status: UserStatus;
   emailVerified: boolean;
+  supervisorId: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-export interface UserDetail extends UserSummary {}
+export type UserDetail = UserSummary;
 
 export interface UserListResponse {
   total: number;
@@ -44,15 +45,38 @@ export interface CreateUserResponse {
 }
 
 export interface AssignSupervisorPayload {
-  supportStaffId: string;
   supervisorId: string;
 }
 
 export interface AssignSupervisorResponse {
   message: string;
   user: UserSummary & {
-    supervisor?: Pick<UserShort, 'id' | 'name' | 'email'> | null;
+    supervisor?: Pick<UserShort, "id" | "name" | "email"> | null;
   };
+}
+
+export interface UpdateUserPayload {
+  name?: string;
+  email?: string;
+  phone?: string | null;
+  role?: UserRole;
+  emailVerified?: boolean;
+  supervisorId?: string | null;
+}
+
+export interface UpdateUserStatusPayload {
+  status: UserStatus;
+}
+
+export interface UpdateUserResponse {
+  message: string;
+  user: UserSummary;
+}
+
+export interface ResetUserPasswordResponse {
+  message: string;
+  userId: string;
+  defaultPassword: string;
 }
 
 export interface AuthUser extends UserSummary {
@@ -75,4 +99,24 @@ export interface LogoutResponse {
 
 export interface AuthUserResponse {
   user: AuthUser;
+}
+
+export interface UpdateProfilePayload {
+  name?: string;
+  email?: string;
+  phone?: string | null;
+}
+
+export interface UpdateProfileResponse {
+  message: string;
+  user: AuthUser;
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  message: string;
 }

@@ -1,11 +1,51 @@
-export interface TicketIssueType {
+export interface TicketCategory {
   id: string;
   name: string;
   createdAt: Date;
   updatedAt: Date;
+  ticketCount?: number;
 }
 
-export interface TicketIssueTypeRef {
+export interface TicketCategoryTicketSummary {
+  id: string;
+  ticketNumber: string;
+  title: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  createdAt: string;
+  updatedAt: string;
+  customer: {
+    id: string;
+    name: string;
+  };
+  assignedTo: {
+    id: string;
+    name: string;
+  } | null;
+}
+
+export interface TicketCategoryDetail extends TicketCategory {
+  tickets: TicketCategoryTicketSummary[];
+}
+
+export interface CreateTicketCategoryPayload {
+  name: string;
+}
+
+export interface UpdateTicketCategoryPayload {
+  name?: string;
+}
+
+export interface UpdateTicketCategoryResponse {
+  message: string;
+  data: TicketCategory;
+}
+
+export interface DeleteTicketCategoryResponse {
+  message: string;
+}
+
+export interface TicketCategoryRef {
   id: string;
   name: string;
 }
@@ -43,7 +83,7 @@ export interface TicketShort {
   title: string;
   description: string;
   customerId: string;
-  issueType: TicketIssueTypeRef;
+  category: TicketCategoryRef;
   status: TicketStatus;
   assignedTo: {
     id: string;
@@ -86,10 +126,17 @@ export interface TicketListResponse {
   tickets: TicketShort[];
 }
 
+export interface TicketListFilters {
+  categoryId?: string;
+  status?: TicketStatus;
+  priority?: TicketPriority;
+  search?: string;
+}
+
 export interface CreateTicketPayload {
   title: string;
   description: string;
-  issueTypeId: string;
+  categoryId: string;
   customerId: string;
   status?: TicketStatus;
   priority?: TicketPriority;

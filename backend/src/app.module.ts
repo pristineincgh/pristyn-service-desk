@@ -8,6 +8,9 @@ import { configuration, configValidationSchema } from './config/config';
 import { RedisModule } from './redis/redis.module';
 import { AuthModule } from './auth/auth.module';
 import { ActivityModule } from './activity/activity.module';
+import { CustomersModule } from './customers/customers.module';
+import { TicketCategoriesModule } from './ticket-categories/ticket-categories.module';
+import { TicketsModule } from './tickets/tickets.module';
 
 @Module({
   imports: [
@@ -20,6 +23,9 @@ import { ActivityModule } from './activity/activity.module';
     RedisModule,
     AuthModule,
     ActivityModule,
+    CustomersModule,
+    TicketCategoriesModule,
+    TicketsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

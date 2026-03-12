@@ -10,8 +10,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 type ConfirmAlertDialogProps = {
   open: boolean;
@@ -57,7 +55,7 @@ const ConfirmAlertDialog = ({
           </AlertDialogCancel>
           <AlertDialogAction
             disabled={isConfirming}
-            className={cn(buttonVariants({ variant: confirmVariant }))}
+            variant={confirmVariant}
             onClick={(event) => {
               // Keep dialog open; parent closes it on successful completion.
               event.preventDefault();

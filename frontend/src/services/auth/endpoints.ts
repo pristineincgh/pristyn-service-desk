@@ -1,12 +1,16 @@
-import { apiFetch } from '@/lib/api';
+import { apiFetch } from "@/lib/api";
 import type {
   AuthUserResponse,
+  ChangePasswordPayload,
+  ChangePasswordResponse,
   LoginPayload,
   LoginResponse,
   LogoutResponse,
-} from '@/types/user-types';
+  UpdateProfilePayload,
+  UpdateProfileResponse,
+} from "@/types/user-types";
 
-const BASE_URL = '/api/auth';
+const BASE_URL = "/api/auth";
 
 export const getAuthUser = async (): Promise<AuthUserResponse> => {
   return apiFetch(`${BASE_URL}/me`);
@@ -14,14 +18,34 @@ export const getAuthUser = async (): Promise<AuthUserResponse> => {
 
 export const login = async (data: LoginPayload): Promise<LoginResponse> => {
   return apiFetch(`${BASE_URL}/login`, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(data),
-    headers: { 'Content-Type': 'application/json' },
+    headers: { "Content-Type": "application/json" },
   });
 };
 
 export const logout = async (): Promise<LogoutResponse> => {
   return apiFetch(`${BASE_URL}/logout`, {
-    method: 'POST',
+    method: "POST",
+  });
+};
+
+export const updateProfile = async (
+  data: UpdateProfilePayload,
+): Promise<UpdateProfileResponse> => {
+  return apiFetch(`${BASE_URL}/me`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+    headers: { "Content-Type": "application/json" },
+  });
+};
+
+export const changePassword = async (
+  data: ChangePasswordPayload,
+): Promise<ChangePasswordResponse> => {
+  return apiFetch(`${BASE_URL}/change-password`, {
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: { "Content-Type": "application/json" },
   });
 };
