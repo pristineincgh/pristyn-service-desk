@@ -230,10 +230,39 @@ export class TicketsService {
     }
 
     if (requester.role === UserRole.AGENT) {
-      return { createdById: requester.id };
+      return {
+        OR: [{ createdById: requester.id }, { assignedToId: requester.id }],
+      };
     }
 
     throw new ForbiddenException('Unsupported user role');
+  }
+
+  private isAgentTicketAccessible(
+    ticket: {
+      createdById: string;
+      assignedToId: string | null;
+    },
+    requesterId: string,
+  ) {
+    return (
+      ticket.createdById === requesterId || ticket.assignedToId === requesterId
+    );
+  }
+
+  private isSupervisorTicketAccessible(
+    ticket: {
+      createdById: string;
+      createdBy: {
+        supervisorId: string | null;
+      };
+    },
+    requesterId: string,
+  ) {
+    const isOwnTicket = ticket.createdById === requesterId;
+    const isSubordinateTicket = ticket.createdBy.supervisorId === requesterId;
+
+    return isOwnTicket || isSubordinateTicket;
   }
 
   private async validateTicketAccess(ticketId: string, requesterId: string) {
@@ -243,6 +272,7 @@ export class TicketsService {
       where: { id: ticketId },
       select: {
         id: true,
+        assignedToId: true,
         createdById: true,
         createdBy: {
           select: {
@@ -261,9 +291,9 @@ export class TicketsService {
     }
 
     if (requester.role === UserRole.AGENT) {
-      if (ticket.createdById !== requester.id) {
+      if (!this.isAgentTicketAccessible(ticket, requester.id)) {
         throw new ForbiddenException(
-          'Agents can only manage tickets they created',
+          'Agents can only manage tickets they created or are assigned to',
         );
       }
 
@@ -271,11 +301,7 @@ export class TicketsService {
     }
 
     if (requester.role === UserRole.SUPERVISOR) {
-      const isOwnTicket = ticket.createdById === requester.id;
-      const isSubordinateTicket =
-        ticket.createdBy.supervisorId === requester.id;
-
-      if (!isOwnTicket && !isSubordinateTicket) {
+      if (!this.isSupervisorTicketAccessible(ticket, requester.id)) {
         throw new ForbiddenException(
           'Supervisors can only manage their own tickets and subordinate tickets',
         );
@@ -340,12 +366,12 @@ export class TicketsService {
 
     if (requester.role === UserRole.AGENT) {
       const hasUnauthorizedTicket = tickets.some(
-        (ticket) => ticket.createdById !== requester.id,
+        (ticket) => !this.isAgentTicketAccessible(ticket, requester.id),
       );
 
       if (hasUnauthorizedTicket) {
         throw new ForbiddenException(
-          'Agents can only manage tickets they created',
+          'Agents can only manage tickets they created or are assigned to',
         );
       }
 
@@ -357,13 +383,9 @@ export class TicketsService {
     }
 
     if (requester.role === UserRole.SUPERVISOR) {
-      const hasUnauthorizedTicket = tickets.some((ticket) => {
-        const isOwnTicket = ticket.createdById === requester.id;
-        const isSubordinateTicket =
-          ticket.createdBy.supervisorId === requester.id;
-
-        return !isOwnTicket && !isSubordinateTicket;
-      });
+      const hasUnauthorizedTicket = tickets.some(
+        (ticket) => !this.isSupervisorTicketAccessible(ticket, requester.id),
+      );
 
       if (hasUnauthorizedTicket) {
         throw new ForbiddenException(

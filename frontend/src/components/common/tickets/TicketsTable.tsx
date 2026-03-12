@@ -21,6 +21,7 @@ type TicketsTableProps = {
   onPageSizeChange: (size: number) => void;
   selectedTicketIds: string[];
   onSelectionChange: (ticketIds: string[]) => void;
+  detailsBasePath?: string;
 };
 
 const getPriorityFormat = (priority: TicketPriority) => {
@@ -56,6 +57,7 @@ const TicketsTable = ({
   onPageSizeChange,
   selectedTicketIds,
   onSelectionChange,
+  detailsBasePath = '/dashboard/moderator/tickets',
 }: TicketsTableProps) => {
   const router = useRouter();
   const visibleTicketIds = useMemo(
@@ -205,9 +207,7 @@ const TicketsTable = ({
       emptyMessage='No tickets found.'
       pageSizeOptions={[10, 20, 50]}
       onRowClick={(ticket) =>
-        router.push(
-          `/dashboard/moderator/tickets/${encodeURIComponent(ticket.id)}`
-        )
+        router.push(`${detailsBasePath}/${encodeURIComponent(ticket.id)}`)
       }
     />
   );

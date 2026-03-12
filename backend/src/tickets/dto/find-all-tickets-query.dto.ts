@@ -1,5 +1,12 @@
 import { Transform, Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
 import { Priority, TicketStatus } from 'src/generated/prisma/enums';
 
 const normalizeOptionalQueryString = ({ value }: { value: unknown }) => {

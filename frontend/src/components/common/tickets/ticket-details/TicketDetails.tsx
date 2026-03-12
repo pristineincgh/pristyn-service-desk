@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -20,7 +19,10 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { useDeleteTicket, useUpdateTicket } from '@/services/tickets/mutations';
+import {
+  useDeleteTicket,
+  useUpdateTicket,
+} from '@/services/tickets/mutations';
 import { useTicket } from '@/services/tickets/queries';
 import {
   useDeleteTicketNote,
@@ -38,9 +40,13 @@ import {
 
 interface Props {
   ticketId: string;
+  basePath?: string;
 }
 
-const TicketDetails = ({ ticketId }: Props) => {
+const TicketDetails = ({
+  ticketId,
+  basePath = '/dashboard/moderator/tickets',
+}: Props) => {
   const router = useRouter();
   const authUser = useAuthStore((state) => state.authUser);
   const { data: ticket, isLoading, isFetching, isError } = useTicket(ticketId);
@@ -78,7 +84,7 @@ const TicketDetails = ({ ticketId }: Props) => {
       return;
     }
 
-    router.push('/dashboard/moderator/tickets');
+    router.push(basePath);
   };
 
   const assignees = useMemo<UserShort[]>(() => {
@@ -271,7 +277,7 @@ const TicketDetails = ({ ticketId }: Props) => {
     try {
       const response = await deleteTicketMutation.mutateAsync(ticket.id);
       toast.success(response.message || 'Ticket deleted successfully');
-      router.push('/dashboard/moderator/tickets');
+      router.push(basePath);
     } catch {
       // Error toast handled in mutation hook.
     }
@@ -327,6 +333,7 @@ const TicketDetails = ({ ticketId }: Props) => {
           ticket={ticket}
           isFetching={isFetching}
           isDeleting={deleteTicketMutation.isPending}
+          backHref={basePath}
           onAddNote={() => setIsAddNoteModalOpen(true)}
           onEditDetails={() => setIsEditDetailsModalOpen(true)}
           onDeleteTicket={() => setIsDeleteTicketDialogOpen(true)}
@@ -395,7 +402,6 @@ const TicketDetails = ({ ticketId }: Props) => {
             isAssigneeDirty={isAssigneeDirty}
             isUpdatingTicket={updateTicketMutation.isPending}
             isDeletingTicket={deleteTicketMutation.isPending}
-            authUserId={authUser?.id}
             onStatusChange={setStatusOverride}
             onPriorityChange={setPriorityOverride}
             onAssigneeChange={setAssigneeOverride}
