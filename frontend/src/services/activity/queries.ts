@@ -1,13 +1,19 @@
-import { useQuery } from '@tanstack/react-query';
-import * as endpoints from './endpoints';
-import { ActivityListResponse } from '@/types/activity-types';
+import { useQuery } from "@tanstack/react-query";
+import * as endpoints from "./endpoints";
+import { ActivityFilters, ActivityListResponse } from "@/types/activity-types";
 
 export const activityQueryKeys = {
-  recent: (limit: number) => ['activity', 'recent', limit] as const,
+  all: ["activity"] as const,
+  list: (page: number, limit: number, filters: ActivityFilters) =>
+    ["activity", "list", page, limit, filters] as const,
 };
 
-export const useRecentActivities = (limit = 20) =>
+export const useActivities = (
+  page = 1,
+  limit = 20,
+  filters: ActivityFilters = {},
+) =>
   useQuery<ActivityListResponse>({
-    queryKey: activityQueryKeys.recent(limit),
-    queryFn: () => endpoints.getRecentActivities(limit),
+    queryKey: activityQueryKeys.list(page, limit, filters),
+    queryFn: () => endpoints.getActivities(page, limit, filters),
   });

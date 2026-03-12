@@ -454,6 +454,67 @@ export class UsersService {
     return updatedUser;
   }
 
+  async updateOwnProfile(
+    userId: string,
+    dto: {
+      name?: string | null;
+      email?: string | null;
+      phone?: string | null;
+    },
+  ) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: this.safeUserSelect,
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException('User does not exist');
+    }
+
+    const normalizedName = this.normalizeOptionalString(dto.name);
+    const normalizedEmail = this.normalizeOptionalString(dto.email);
+    const normalizedPhone = this.normalizeOptionalString(dto.phone);
+
+    if (
+      normalizedName === undefined &&
+      normalizedEmail === undefined &&
+      normalizedPhone === undefined
+    ) {
+      throw new BadRequestException('No fields were provided for update');
+    }
+
+    if (normalizedName === null) {
+      throw new BadRequestException('Name cannot be empty');
+    }
+
+    if (normalizedEmail === null) {
+      throw new BadRequestException('Email cannot be empty');
+    }
+
+    const nextEmail =
+      normalizedEmail !== undefined
+        ? normalizedEmail.toLowerCase()
+        : existingUser.email;
+
+    if (nextEmail !== existingUser.email) {
+      const duplicateUser = await this.findByEmail(nextEmail);
+
+      if (duplicateUser && duplicateUser.id !== userId) {
+        throw new ConflictException('User with this email already exists');
+      }
+    }
+
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(normalizedName !== undefined ? { name: normalizedName } : {}),
+        ...(normalizedEmail !== undefined ? { email: nextEmail } : {}),
+        ...(normalizedPhone !== undefined ? { phone: normalizedPhone } : {}),
+      },
+      select: this.safeUserSelect,
+    });
+  }
+
   async updateUserStatus(userId: string, status: UserStatus, actorId: string) {
     const existingUser = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -472,20 +533,35 @@ export class UsersService {
       return existingUser;
     }
 
-    return this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
         status,
       },
       select: this.safeUserSelect,
     });
+
+    await this.activityService.logActivity({
+      action: ActivityLogAction.USER_STATUS_CHANGED,
+      entityType: ActivityEntityType.USER,
+      entityId: updatedUser.id,
+      actorId,
+      userId: updatedUser.id,
+      metadata: {
+        previousStatus: existingUser.status,
+        status: updatedUser.status,
+      },
+    });
+
+    return updatedUser;
   }
 
-  async resetUserPassword(userId: string) {
+  async resetUserPassword(userId: string, actorId: string) {
     const existingUser = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
+        email: true,
       },
     });
 
@@ -504,10 +580,30 @@ export class UsersService {
       },
     });
 
+    await this.activityService.logActivity({
+      action: ActivityLogAction.USER_PASSWORD_RESET,
+      entityType: ActivityEntityType.USER,
+      entityId: existingUser.id,
+      actorId,
+      userId: existingUser.id,
+      metadata: {
+        email: existingUser.email,
+      },
+    });
+
     return {
       userId,
       defaultPassword,
     };
+  }
+
+  async updatePasswordHash(userId: string, password: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        password,
+      },
+    });
   }
 
   async getUsersByRoleScope(requesterId: string) {

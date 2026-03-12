@@ -14,6 +14,8 @@ import { UpdateTicketCategoryDto } from './dto/update-ticket-category.dto';
 import { SessionAuthGuard } from 'src/auth/guards/session-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import type { AuthenticatedUser } from 'src/auth/types/user.types';
 import { UserRole } from 'src/generated/prisma/enums';
 
 @Controller('ticket-categories')
@@ -25,8 +27,14 @@ export class TicketCategoriesController {
   @UseGuards(SessionAuthGuard, RolesGuard)
   @Roles(UserRole.MODERATOR)
   @Post()
-  create(@Body() createTicketCategoryDto: CreateTicketCategoryDto) {
-    return this.ticketCategoriesService.create(createTicketCategoryDto);
+  create(
+    @Body() createTicketCategoryDto: CreateTicketCategoryDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.ticketCategoriesService.create(
+      createTicketCategoryDto,
+      user.id,
+    );
   }
 
   @Get()
@@ -50,10 +58,12 @@ export class TicketCategoriesController {
   async update(
     @Param('id') id: string,
     @Body() updateTicketCategoryDto: UpdateTicketCategoryDto,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     const updatedCategory = await this.ticketCategoriesService.update(
       id,
       updateTicketCategoryDto,
+      user.id,
     );
 
     return {
@@ -65,8 +75,11 @@ export class TicketCategoriesController {
   @UseGuards(SessionAuthGuard, RolesGuard)
   @Roles(UserRole.MODERATOR)
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    await this.ticketCategoriesService.remove(id);
+  async remove(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    await this.ticketCategoriesService.remove(id, user.id);
 
     return {
       message: 'Category removed',

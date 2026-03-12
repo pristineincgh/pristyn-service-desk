@@ -10,6 +10,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { SessionAuthGuard } from 'src/auth/guards/session-auth.guard';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import type { AuthenticatedUser } from 'src/auth/types/user.types';
 import { CustomersService } from './customers.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -20,8 +22,11 @@ export class CustomersController {
 
   @UseGuards(SessionAuthGuard)
   @Post()
-  async create(@Body() dto: CreateCustomerDto) {
-    const customer = await this.customersService.createCustomer(dto);
+  async create(
+    @Body() dto: CreateCustomerDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const customer = await this.customersService.createCustomer(dto, user.id);
 
     return {
       message: 'Customer created successfully',
@@ -48,8 +53,16 @@ export class CustomersController {
 
   @UseGuards(SessionAuthGuard)
   @Patch(':id')
-  async update(@Param('id') id: string, @Body() dto: UpdateCustomerDto) {
-    const customer = await this.customersService.updateCustomer(id, dto);
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateCustomerDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const customer = await this.customersService.updateCustomer(
+      id,
+      dto,
+      user.id,
+    );
 
     return {
       message: 'Customer updated successfully',
@@ -59,8 +72,11 @@ export class CustomersController {
 
   @UseGuards(SessionAuthGuard)
   @Delete(':id')
-  async remove(@Param('id') id: string) {
-    await this.customersService.deleteCustomer(id);
+  async remove(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    await this.customersService.deleteCustomer(id, user.id);
 
     return {
       message: 'Customer deleted successfully',

@@ -1,6 +1,11 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateTicketCategoryDto } from './dto/create-ticket-category.dto';
 import { UpdateTicketCategoryDto } from './dto/update-ticket-category.dto';
+import { ActivityService } from 'src/activity/activity.service';
+import {
+  ActivityEntityType,
+  ActivityLogAction,
+} from 'src/generated/prisma/enums';
 import { PrismaService } from 'src/prisma.service';
 
 const TICKET_CATEGORY_LIST_SELECT = {
@@ -47,7 +52,10 @@ const TICKET_CATEGORY_DETAIL_SELECT = {
 
 @Injectable()
 export class TicketCategoriesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly activityService: ActivityService,
+  ) {}
 
   private normalizeName(name: string) {
     return name.trim();
@@ -71,7 +79,10 @@ export class TicketCategoriesService {
     };
   }
 
-  async create(createTicketCategoryDto: CreateTicketCategoryDto) {
+  async create(
+    createTicketCategoryDto: CreateTicketCategoryDto,
+    actorId: string,
+  ) {
     const name = this.normalizeName(createTicketCategoryDto.name);
 
     try {
@@ -80,7 +91,19 @@ export class TicketCategoriesService {
         select: TICKET_CATEGORY_LIST_SELECT,
       });
 
-      return this.normalizeCategory(category);
+      const normalizedCategory = this.normalizeCategory(category);
+
+      await this.activityService.logActivity({
+        action: ActivityLogAction.TICKET_CATEGORY_CREATED,
+        entityType: ActivityEntityType.TICKET_CATEGORY,
+        entityId: normalizedCategory.id,
+        actorId,
+        metadata: {
+          name: normalizedCategory.name,
+        },
+      });
+
+      return normalizedCategory;
     } catch {
       throw new BadRequestException('Category already exists');
     }
@@ -113,7 +136,11 @@ export class TicketCategoriesService {
     };
   }
 
-  async update(id: string, updateTicketCategoryDto: UpdateTicketCategoryDto) {
+  async update(
+    id: string,
+    updateTicketCategoryDto: UpdateTicketCategoryDto,
+    actorId: string,
+  ) {
     const ticketCategory = await this.findOne(id);
 
     if (!ticketCategory) {
@@ -131,13 +158,32 @@ export class TicketCategoriesService {
         select: TICKET_CATEGORY_LIST_SELECT,
       });
 
-      return this.normalizeCategory(updatedCategory);
+      const normalizedCategory = this.normalizeCategory(updatedCategory);
+
+      if (
+        updateTicketCategoryDto.name !== undefined &&
+        normalizedCategory.name !== ticketCategory.name
+      ) {
+        await this.activityService.logActivity({
+          action: ActivityLogAction.TICKET_CATEGORY_UPDATED,
+          entityType: ActivityEntityType.TICKET_CATEGORY,
+          entityId: normalizedCategory.id,
+          actorId,
+          metadata: {
+            changedFields: ['name'],
+            previousName: ticketCategory.name,
+            name: normalizedCategory.name,
+          },
+        });
+      }
+
+      return normalizedCategory;
     } catch {
       throw new BadRequestException('Category already exists');
     }
   }
 
-  async remove(id: string) {
+  async remove(id: string, actorId: string) {
     const ticketCategory = await this.findOne(id);
 
     if (!ticketCategory) {
@@ -153,6 +199,16 @@ export class TicketCategoriesService {
         'Cannot delete category because it is assigned to existing tickets',
       );
     }
+
+    await this.activityService.logActivity({
+      action: ActivityLogAction.TICKET_CATEGORY_DELETED,
+      entityType: ActivityEntityType.TICKET_CATEGORY,
+      entityId: ticketCategory.id,
+      actorId,
+      metadata: {
+        name: ticketCategory.name,
+      },
+    });
 
     await this.prisma.ticketCategory.delete({
       where: { id },

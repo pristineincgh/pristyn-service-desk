@@ -1,13 +1,13 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import * as endpoints from './endpoints';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import * as endpoints from "./endpoints";
 import {
   CreateTicketNotePayload,
   UpdateTicketNotePayload,
-} from '@/types/ticket-types';
-import { toast } from 'sonner';
-import { ticketNoteQueryKeys } from './queries';
-import { activityQueryKeys } from '@/services/activity/queries';
-import { ticketQueryKeys } from '../queries';
+} from "@/types/ticket-types";
+import { toast } from "sonner";
+import { ticketNoteQueryKeys } from "./queries";
+import { activityQueryKeys } from "@/services/activity/queries";
+import { ticketQueryKeys } from "../queries";
 
 export const useCreateTicketNote = () => {
   const queryClient = useQueryClient();
@@ -28,11 +28,11 @@ export const useCreateTicketNote = () => {
         queryKey: ticketQueryKeys.detail(variables.ticketId),
       });
       queryClient.invalidateQueries({
-        queryKey: activityQueryKeys.recent(20),
+        queryKey: activityQueryKeys.all,
       });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create ticket note');
+      toast.error(error.message || "Failed to create ticket note");
     },
   });
 };
@@ -58,11 +58,11 @@ export const useUpdateTicketNote = () => {
         queryKey: ticketQueryKeys.detail(variables.ticketId),
       });
       queryClient.invalidateQueries({
-        queryKey: activityQueryKeys.recent(20),
+        queryKey: activityQueryKeys.all,
       });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update ticket note');
+      toast.error(error.message || "Failed to update ticket note");
     },
   });
 };
@@ -81,11 +81,11 @@ export const useDeleteTicketNote = () => {
         queryKey: ticketQueryKeys.detail(variables.ticketId),
       });
       queryClient.invalidateQueries({
-        queryKey: activityQueryKeys.recent(20),
+        queryKey: activityQueryKeys.all,
       });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete ticket note');
+      toast.error(error.message || "Failed to delete ticket note");
     },
   });
 };

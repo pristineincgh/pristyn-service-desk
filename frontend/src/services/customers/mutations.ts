@@ -1,11 +1,12 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
-import * as endpoints from './endpoints';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import * as endpoints from "./endpoints";
 import {
   CreateCustomerPayload,
   UpdateCustomerPayload,
-} from '@/types/customer-types';
-import { customerQueryKeys } from './queries';
+} from "@/types/customer-types";
+import { customerQueryKeys } from "./queries";
+import { activityQueryKeys } from "../activity/queries";
 
 export const useCreateCustomer = () => {
   const queryClient = useQueryClient();
@@ -15,9 +16,10 @@ export const useCreateCustomer = () => {
       endpoints.createCustomer(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: customerQueryKeys.all });
+      queryClient.invalidateQueries({ queryKey: activityQueryKeys.all });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create customer');
+      toast.error(error.message || "Failed to create customer");
     },
   });
 };
@@ -38,9 +40,10 @@ export const useUpdateCustomer = () => {
       queryClient.invalidateQueries({
         queryKey: customerQueryKeys.detail(variables.id),
       });
+      queryClient.invalidateQueries({ queryKey: activityQueryKeys.all });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update customer');
+      toast.error(error.message || "Failed to update customer");
     },
   });
 };
@@ -55,9 +58,10 @@ export const useDeleteCustomer = () => {
       queryClient.removeQueries({
         queryKey: customerQueryKeys.detail(id),
       });
+      queryClient.invalidateQueries({ queryKey: activityQueryKeys.all });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete customer');
+      toast.error(error.message || "Failed to delete customer");
     },
   });
 };

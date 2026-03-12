@@ -4,10 +4,23 @@ import { SessionAuthGuard } from 'src/auth/guards/session-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { UserRole } from 'src/generated/prisma/enums';
+import { FindActivitiesQueryDto } from './dto/find-activities-query.dto';
 
 @Controller('activity')
 export class ActivityController {
   constructor(private readonly activityService: ActivityService) {}
+
+  @UseGuards(SessionAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  @Get()
+  async getActivities(@Query() query: FindActivitiesQueryDto) {
+    const result = await this.activityService.getActivities(query);
+
+    return {
+      ...result,
+      generatedAt: new Date().toISOString(),
+    };
+  }
 
   @UseGuards(SessionAuthGuard, RolesGuard)
   @Roles(UserRole.MODERATOR)

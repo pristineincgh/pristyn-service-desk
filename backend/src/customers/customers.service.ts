@@ -4,7 +4,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ActivityService } from 'src/activity/activity.service';
 import { Prisma } from 'src/generated/prisma/client';
+import {
+  ActivityEntityType,
+  ActivityLogAction,
+} from 'src/generated/prisma/enums';
 import { PrismaService } from 'src/prisma.service';
 
 export type CreateCustomerInput = {
@@ -56,7 +61,10 @@ const CUSTOMER_DETAIL_SELECT = {
 
 @Injectable()
 export class CustomersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly activityService: ActivityService,
+  ) {}
 
   private normalizeName(name: string) {
     return name.trim();
@@ -119,14 +127,14 @@ export class CustomersService {
     }
   }
 
-  async createCustomer(input: CreateCustomerInput) {
+  async createCustomer(input: CreateCustomerInput, actorId: string) {
     const name = this.normalizeName(input.name);
     const phone = this.normalizePhone(input.phone);
     const email = this.normalizeEmail(input.email);
 
     await this.ensureUniqueCustomerFields({ phone, email });
 
-    return this.prisma.customer.create({
+    const customer = await this.prisma.customer.create({
       data: {
         name,
         email,
@@ -134,6 +142,20 @@ export class CustomersService {
       },
       select: CUSTOMER_SELECT,
     });
+
+    await this.activityService.logActivity({
+      action: ActivityLogAction.CUSTOMER_CREATED,
+      entityType: ActivityEntityType.CUSTOMER,
+      entityId: customer.id,
+      actorId,
+      metadata: {
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+      },
+    });
+
+    return customer;
   }
 
   async findAllCustomers(search?: string) {
@@ -184,8 +206,19 @@ export class CustomersService {
     return customer;
   }
 
-  async updateCustomer(id: string, input: UpdateCustomerInput) {
-    await this.ensureCustomerExists(id);
+  async updateCustomer(
+    id: string,
+    input: UpdateCustomerInput,
+    actorId: string,
+  ) {
+    const existingCustomer = await this.prisma.customer.findUnique({
+      where: { id },
+      select: CUSTOMER_SELECT,
+    });
+
+    if (!existingCustomer) {
+      throw new NotFoundException('Customer not found');
+    }
 
     const normalizedName =
       input.name !== undefined ? this.normalizeName(input.name) : undefined;
@@ -208,7 +241,7 @@ export class CustomersService {
       excludeCustomerId: id,
     });
 
-    return this.prisma.customer.update({
+    const customer = await this.prisma.customer.update({
       where: { id },
       data: {
         ...(normalizedName !== undefined ? { name: normalizedName } : {}),
@@ -217,10 +250,45 @@ export class CustomersService {
       },
       select: CUSTOMER_SELECT,
     });
+
+    const changedFields = Object.entries(input)
+      .filter(([, value]) => value !== undefined)
+      .map(([key]) => key);
+
+    if (changedFields.length > 0) {
+      await this.activityService.logActivity({
+        action: ActivityLogAction.CUSTOMER_UPDATED,
+        entityType: ActivityEntityType.CUSTOMER,
+        entityId: customer.id,
+        actorId,
+        metadata: {
+          changedFields,
+          previous: {
+            name: existingCustomer.name,
+            email: existingCustomer.email,
+            phone: existingCustomer.phone,
+          },
+          current: {
+            name: customer.name,
+            email: customer.email,
+            phone: customer.phone,
+          },
+        },
+      });
+    }
+
+    return customer;
   }
 
-  async deleteCustomer(id: string) {
-    await this.ensureCustomerExists(id);
+  async deleteCustomer(id: string, actorId: string) {
+    const customer = await this.prisma.customer.findUnique({
+      where: { id },
+      select: CUSTOMER_SELECT,
+    });
+
+    if (!customer) {
+      throw new NotFoundException('Customer not found');
+    }
 
     const ticketCount = await this.prisma.ticket.count({
       where: { customerId: id },
@@ -231,6 +299,18 @@ export class CustomersService {
         'Cannot delete customer because tickets are linked to this customer',
       );
     }
+
+    await this.activityService.logActivity({
+      action: ActivityLogAction.CUSTOMER_DELETED,
+      entityType: ActivityEntityType.CUSTOMER,
+      entityId: customer.id,
+      actorId,
+      metadata: {
+        name: customer.name,
+        email: customer.email,
+        phone: customer.phone,
+      },
+    });
 
     await this.prisma.customer.delete({
       where: { id },

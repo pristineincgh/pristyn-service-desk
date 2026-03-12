@@ -1,15 +1,15 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import * as endpoints from './endpoints';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import * as endpoints from "./endpoints";
 import {
   BulkDeleteTicketsPayload,
   BulkReassignTicketsPayload,
   BulkUpdateTicketStatusPayload,
   CreateTicketPayload,
   UpdateTicketPayload,
-} from '@/types/ticket-types';
-import { toast } from 'sonner';
-import { ticketQueryKeys } from './queries';
-import { activityQueryKeys } from '../activity/queries';
+} from "@/types/ticket-types";
+import { toast } from "sonner";
+import { ticketQueryKeys } from "./queries";
+import { activityQueryKeys } from "../activity/queries";
 
 export const useCreateTicket = () => {
   const queryClient = useQueryClient();
@@ -21,11 +21,11 @@ export const useCreateTicket = () => {
         queryKey: ticketQueryKeys.all,
       });
       queryClient.invalidateQueries({
-        queryKey: activityQueryKeys.recent(20),
+        queryKey: activityQueryKeys.all,
       });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to create ticket');
+      toast.error(error.message || "Failed to create ticket");
     },
   });
 };
@@ -44,11 +44,11 @@ export const useUpdateTicket = () => {
         queryKey: ticketQueryKeys.detail(variables.id),
       });
       queryClient.invalidateQueries({
-        queryKey: activityQueryKeys.recent(20),
+        queryKey: activityQueryKeys.all,
       });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update ticket');
+      toast.error(error.message || "Failed to update ticket");
     },
   });
 };
@@ -63,11 +63,11 @@ export const useDeleteTicket = () => {
         queryKey: ticketQueryKeys.all,
       });
       queryClient.invalidateQueries({
-        queryKey: activityQueryKeys.recent(20),
+        queryKey: activityQueryKeys.all,
       });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete ticket');
+      toast.error(error.message || "Failed to delete ticket");
     },
   });
 };
@@ -83,11 +83,11 @@ export const useBulkReassignTickets = () => {
         queryKey: ticketQueryKeys.all,
       });
       queryClient.invalidateQueries({
-        queryKey: activityQueryKeys.recent(20),
+        queryKey: activityQueryKeys.all,
       });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to reassign tickets');
+      toast.error(error.message || "Failed to reassign tickets");
     },
   });
 };
@@ -103,11 +103,11 @@ export const useBulkUpdateTicketStatus = () => {
         queryKey: ticketQueryKeys.all,
       });
       queryClient.invalidateQueries({
-        queryKey: activityQueryKeys.recent(20),
+        queryKey: activityQueryKeys.all,
       });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update ticket statuses');
+      toast.error(error.message || "Failed to update ticket statuses");
     },
   });
 };
@@ -123,11 +123,11 @@ export const useBulkDeleteTickets = () => {
         queryKey: ticketQueryKeys.all,
       });
       queryClient.invalidateQueries({
-        queryKey: activityQueryKeys.recent(20),
+        queryKey: activityQueryKeys.all,
       });
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete tickets');
+      toast.error(error.message || "Failed to delete tickets");
     },
   });
 };

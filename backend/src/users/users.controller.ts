@@ -110,8 +110,11 @@ export class UsersController {
   @UseGuards(SessionAuthGuard, RolesGuard)
   @Roles(UserRole.MODERATOR)
   @Post(':id/reset-password')
-  async resetUserPassword(@Param('id') id: string) {
-    const result = await this.usersService.resetUserPassword(id);
+  async resetUserPassword(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.usersService.resetUserPassword(id, user.id);
 
     return {
       message: 'User password reset successfully.',

@@ -1,16 +1,40 @@
-import { UserRole } from './user-types';
+import { UserRole } from "./user-types";
 
-export type ActivityEntityType = 'TICKET' | 'USER' | 'SYSTEM';
+export type ActivityEntityType =
+  | "TICKET"
+  | "USER"
+  | "CUSTOMER"
+  | "TICKET_CATEGORY"
+  | "SYSTEM";
 
 export type ActivityLogAction =
-  | 'TICKET_CREATED'
-  | 'TICKET_UPDATED'
-  | 'TICKET_ASSIGNED'
-  | 'TICKET_STATUS_CHANGED'
-  | 'TICKET_PRIORITY_CHANGED'
-  | 'TICKET_DELETED'
-  | 'USER_CREATED'
-  | 'USER_ASSIGNED_TO_SUPERVISOR';
+  | "TICKET_CREATED"
+  | "TICKET_UPDATED"
+  | "TICKET_ASSIGNED"
+  | "TICKET_STATUS_CHANGED"
+  | "TICKET_PRIORITY_CHANGED"
+  | "TICKET_DELETED"
+  | "USER_CREATED"
+  | "USER_ASSIGNED_TO_SUPERVISOR"
+  | "USER_STATUS_CHANGED"
+  | "USER_PASSWORD_RESET"
+  | "USER_LOGGED_IN"
+  | "USER_LOGGED_OUT"
+  | "CUSTOMER_CREATED"
+  | "CUSTOMER_UPDATED"
+  | "CUSTOMER_DELETED"
+  | "TICKET_CATEGORY_CREATED"
+  | "TICKET_CATEGORY_UPDATED"
+  | "TICKET_CATEGORY_DELETED";
+
+export interface ActivityFilters {
+  search?: string;
+  entityType?: ActivityEntityType;
+  action?: ActivityLogAction;
+  actorId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
 
 export interface ActivityActor {
   id: string;
@@ -48,6 +72,11 @@ export interface ActivityLogItem {
 
 export interface ActivityListResponse {
   total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
   generatedAt: string;
   activities: ActivityLogItem[];
 }
