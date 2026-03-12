@@ -1,4 +1,11 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+  forwardRef,
+} from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { StringValue } from 'ms';
 import { AuthenticatedUser, SafeUser, SessionUser } from './types/user.types';
@@ -7,11 +14,19 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from 'src/users/users.service';
 import { ConfigService } from '@nestjs/config';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import * as bcrypt from 'bcrypt';
-import { UserRole, UserStatus } from 'src/generated/prisma/enums';
+import {
+  ActivityEntityType,
+  ActivityLogAction,
+  UserRole,
+  UserStatus,
+} from 'src/generated/prisma/enums';
 import { TokenExpiredError } from 'jsonwebtoken';
 import type { LoginResponse, TokenPair } from './types/response.types';
 import type { CookieOptions } from 'express';
+import { ActivityService } from 'src/activity/activity.service';
 
 interface SessionData {
   userId: string;
@@ -52,6 +67,8 @@ export class AuthService {
     private usersService: UsersService,
     private configService: ConfigService,
     private cacheService: RedisService,
+    @Inject(forwardRef(() => ActivityService))
+    private readonly activityService: ActivityService,
   ) {
     this.sessionPrefix = this.configService.get<string>(
       'session.prefix',
@@ -269,6 +286,17 @@ export class AuthService {
 
     this.logger.log(`Created session ${sessionId} for user ${safeUser.id}`);
 
+    await this.activityService.logActivity({
+      action: ActivityLogAction.USER_LOGGED_IN,
+      entityType: ActivityEntityType.USER,
+      entityId: safeUser.id,
+      actorId: safeUser.id,
+      userId: safeUser.id,
+      metadata: {
+        sessionId,
+      },
+    });
+
     return {
       message: 'Login successful',
       user: safeUser,
@@ -345,8 +373,58 @@ export class AuthService {
     return this.usersService.findPublicById(session.userId);
   }
 
+  async updateProfile(
+    userId: string,
+    dto: UpdateProfileDto,
+  ): Promise<SafeUser> {
+    return this.usersService.updateOwnProfile(userId, dto);
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
+    const user = await this.usersService.findById(userId);
+
+    if (!user) {
+      throw new UnauthorizedException('User does not exist');
+    }
+
+    const passwordMatches = await bcrypt.compare(
+      dto.currentPassword,
+      user.password,
+    );
+
+    if (!passwordMatches) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException(
+        'New password must be different from current password',
+      );
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+    await this.usersService.updatePasswordHash(userId, hashedPassword);
+  }
+
   async logout(sessionId: string): Promise<void> {
+    const session = await this.getSession(sessionId);
+
     await this.deleteSession(sessionId);
     this.logger.log(`Deleted session ${sessionId}`);
+
+    if (!session) {
+      return;
+    }
+
+    await this.activityService.logActivity({
+      action: ActivityLogAction.USER_LOGGED_OUT,
+      entityType: ActivityEntityType.USER,
+      entityId: session.userId,
+      actorId: session.userId,
+      userId: session.userId,
+      metadata: {
+        sessionId,
+      },
+    });
   }
 }

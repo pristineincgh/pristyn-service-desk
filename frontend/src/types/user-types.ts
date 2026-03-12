@@ -1,12 +1,12 @@
 export enum UserRole {
-  AGENT = 'AGENT',
-  SUPERVISOR = 'SUPERVISOR',
-  MODERATOR = 'MODERATOR',
+  AGENT = "AGENT",
+  SUPERVISOR = "SUPERVISOR",
+  MODERATOR = "MODERATOR",
 }
 
 export enum UserStatus {
-  ACTIVE = 'ACTIVE',
-  INACTIVE = 'INACTIVE',
+  ACTIVE = "ACTIVE",
+  INACTIVE = "INACTIVE",
 }
 
 export interface UserShort {
@@ -51,7 +51,7 @@ export interface AssignSupervisorPayload {
 export interface AssignSupervisorResponse {
   message: string;
   user: UserSummary & {
-    supervisor?: Pick<UserShort, 'id' | 'name' | 'email'> | null;
+    supervisor?: Pick<UserShort, "id" | "name" | "email"> | null;
   };
 }
 
@@ -99,4 +99,24 @@ export interface LogoutResponse {
 
 export interface AuthUserResponse {
   user: AuthUser;
+}
+
+export interface UpdateProfilePayload {
+  name?: string;
+  email?: string;
+  phone?: string | null;
+}
+
+export interface UpdateProfileResponse {
+  message: string;
+  user: AuthUser;
+}
+
+export interface ChangePasswordPayload {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  message: string;
 }

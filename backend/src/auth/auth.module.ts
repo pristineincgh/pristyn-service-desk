@@ -7,6 +7,7 @@ import { StringValue } from 'ms';
 import { UsersModule } from 'src/users/users.module';
 import { SessionAuthGuard } from './guards/session-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
+import { ActivityModule } from 'src/activity/activity.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { RolesGuard } from './guards/roles.guard';
       }),
     }),
     forwardRef(() => UsersModule),
+    forwardRef(() => ActivityModule),
   ],
   providers: [AuthService, SessionAuthGuard, RolesGuard],
   controllers: [AuthController],

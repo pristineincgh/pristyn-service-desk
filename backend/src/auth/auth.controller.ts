@@ -1,4 +1,5 @@
 import {
+  Patch,
   Controller,
   Get,
   HttpCode,
@@ -10,6 +11,8 @@ import {
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { AUTH_SESSION_ID_COOKIE } from './auth.constants';
 import type { LoginResponse, LogoutResponse } from './types/response.types';
 import { SessionAuthGuard } from './guards/session-auth.guard';
@@ -47,6 +50,34 @@ export class AuthController {
 
     return {
       user: sessionUser,
+    };
+  }
+
+  @Patch('me')
+  @UseGuards(SessionAuthGuard)
+  async updateProfile(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: UpdateProfileDto,
+  ): Promise<{ message: string; user: SafeUser }> {
+    const updatedUser = await this.authService.updateProfile(user.id, dto);
+
+    return {
+      message: 'Profile updated successfully',
+      user: updatedUser,
+    };
+  }
+
+  @Post('change-password')
+  @HttpCode(200)
+  @UseGuards(SessionAuthGuard)
+  async changePassword(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() dto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    await this.authService.changePassword(user.id, dto);
+
+    return {
+      message: 'Password changed successfully',
     };
   }
 
