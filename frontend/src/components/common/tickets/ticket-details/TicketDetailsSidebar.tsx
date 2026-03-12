@@ -1,10 +1,4 @@
-import {
-  AlertTriangle,
-  Clock3,
-  MessageSquarePlus,
-  Trash2,
-  UserRound,
-} from 'lucide-react';
+import { AlertTriangle, Clock3, Trash2, UserRound } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -54,7 +48,6 @@ interface TicketDetailsSidebarProps {
   isAssigneeDirty: boolean;
   isUpdatingTicket: boolean;
   isDeletingTicket: boolean;
-  authUserId?: string;
   onStatusChange: (value: TicketStatus) => void;
   onPriorityChange: (value: TicketPriority) => void;
   onAssigneeChange: (value: string) => void;
@@ -77,7 +70,6 @@ const TicketDetailsSidebar = ({
   isAssigneeDirty,
   isUpdatingTicket,
   isDeletingTicket,
-  authUserId,
   onStatusChange,
   onPriorityChange,
   onAssigneeChange,
@@ -188,7 +180,6 @@ const TicketDetailsSidebar = ({
                 {assignees.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
                     {user.name}
-                    {authUserId === user.id ? ' (You)' : ''}
                   </SelectItem>
                 ))}
               </SelectContent>

@@ -3,55 +3,66 @@ import {
   History,
   LayoutDashboard,
   Tickets,
+  UserRound,
   Users,
   UsersRound,
-} from "lucide-react";
+} from 'lucide-react';
 
-export const supportNavItems = [
+export const agentNavItems = [
   {
-    label: "Dashboard",
+    label: 'Dashboard',
     icon: LayoutDashboard,
-    href: "/dashboard/support",
+    href: '/dashboard/agent',
+  },
+  {
+    label: 'Tickets',
+    icon: Tickets,
+    href: '/dashboard/agent/tickets',
+  },
+  {
+    label: 'Supervisor',
+    icon: UserRound,
+    href: '/dashboard/agent/supervisor',
   },
 ];
 
 export const supervisorNavItems = [
   {
-    label: "Dashboard",
+    label: 'Dashboard',
     icon: LayoutDashboard,
-    href: "/dashboard/supervisor",
+    href: '/dashboard/supervisor',
   },
 ];
 
 export const moderatorNavItems = [
   {
-    label: "Dashboard",
+    label: 'Dashboard',
     icon: LayoutDashboard,
-    href: "/dashboard/moderator",
+    href: '/dashboard/moderator',
   },
   {
-    label: "Tickets",
+    label: 'Tickets',
     icon: Tickets,
-    href: "/dashboard/moderator/tickets",
+    href: '/dashboard/moderator/tickets',
   },
   {
-    label: "Users",
+    label: 'Users',
     icon: Users,
-    href: "/dashboard/moderator/users",
+    href: '/dashboard/moderator/users',
   },
   {
-    label: "Customers",
+    label: 'Customers',
     icon: UsersRound,
-    href: "/dashboard/moderator/customers",
+    href: '/dashboard/moderator/customers',
   },
   {
-    label: "Activity",
+    label: 'Activity',
     icon: History,
-    href: "/dashboard/moderator/activity",
+    href: '/dashboard/moderator/activity',
   },
   {
-    label: "Ticket Categories",
+    label: 'Ticket Categories',
     icon: FolderClosed,
-    href: "/dashboard/moderator/ticket-categories",
+    href: '/dashboard/moderator/ticket-categories',
   },
 ];

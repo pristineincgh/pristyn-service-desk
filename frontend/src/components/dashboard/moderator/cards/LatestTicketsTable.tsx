@@ -34,6 +34,8 @@ type LatestTicketsTableProps = {
   total: number;
   isLoading?: boolean;
   errorMessage?: string;
+  listHref?: string;
+  ticketHrefBase?: string;
 };
 
 const statusLabelMap: Record<TicketStatus, string> = {
@@ -63,14 +65,13 @@ const formatTicketDate = (value: string) =>
     year: 'numeric',
   });
 
-const ticketHref = (ticketId: string): string =>
-  `/dashboard/moderator/tickets/${ticketId}`;
-
 const LatestTicketsTable = ({
   tickets,
   total,
   isLoading = false,
   errorMessage,
+  listHref = '/dashboard/moderator/tickets',
+  ticketHrefBase = '/dashboard/moderator/tickets',
 }: LatestTicketsTableProps) => {
   const router = useRouter();
 
@@ -104,7 +105,7 @@ const LatestTicketsTable = ({
           </CardDescription>
         </div>
         <Link
-          href='/dashboard/moderator/tickets'
+          href={listHref}
           className='inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline'
         >
           View all tickets
@@ -152,7 +153,11 @@ const LatestTicketsTable = ({
                 <TableRow
                   key={ticket.id}
                   className='cursor-pointer'
-                  onClick={() => router.push(ticketHref(ticket.id))}
+                  onClick={() =>
+                    router.push(
+                      `${ticketHrefBase}/${encodeURIComponent(ticket.id)}`
+                    )
+                  }
                 >
                   <TableCell className='font-medium text-foreground'>
                     <div className='flex flex-col'>

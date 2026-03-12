@@ -17,6 +17,7 @@ interface TicketDetailsHeaderProps {
   ticket: TicketDetail;
   isFetching: boolean;
   isDeleting: boolean;
+  backHref?: string;
   onAddNote: () => void;
   onEditDetails: () => void;
   onDeleteTicket: () => void;
@@ -26,6 +27,7 @@ const TicketDetailsHeader = ({
   ticket,
   isFetching,
   isDeleting,
+  backHref = '/dashboard/moderator/tickets',
   onAddNote,
   onEditDetails,
   onDeleteTicket,
@@ -38,7 +40,7 @@ const TicketDetailsHeader = ({
       return;
     }
 
-    router.push('/dashboard/moderator/tickets');
+    router.push(backHref);
   };
 
   return (

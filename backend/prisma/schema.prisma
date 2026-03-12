@@ -9,39 +9,37 @@ datasource db {
 }
 
 model User {
-  id            String     @id @default(uuid())
-  name          String
-  email         String     @unique
-  password      String
-  role          UserRole   @default(AGENT)
-  phone         String?
-  emailVerified Boolean    @default(false)
-  status        UserStatus @default(ACTIVE)
-  supervisorId  String?
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-
-  supervisor      User?         @relation("SupervisorToAgent", fields: [supervisorId], references: [id])
-  agents          User[]        @relation("SupervisorToAgent")
+  id              String        @id @default(uuid())
+  name            String
+  email           String        @unique
+  password        String
+  role            UserRole      @default(AGENT)
+  phone           String?
+  emailVerified   Boolean       @default(false)
+  status          UserStatus    @default(ACTIVE)
+  supervisorId    String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  activityActions ActivityLog[] @relation("ActivityActor")
+  activityUsers   ActivityLog[] @relation("ActivityTargetUser")
   assignedTickets Ticket[]      @relation("TicketAssignee")
   createdTickets  Ticket[]      @relation("TicketCreator")
   updatedTickets  Ticket[]      @relation("TicketUpdater")
   ticketNotes     TicketNote[]  @relation("TicketNoteCreator")
-  activityActions ActivityLog[] @relation("ActivityActor")
-  activityUsers   ActivityLog[] @relation("ActivityTargetUser")
+  supervisor      User?         @relation("SupervisorToAgent", fields: [supervisorId], references: [id])
+  agents          User[]        @relation("SupervisorToAgent")
 
   @@index([email])
   @@index([supervisorId])
 }
 
 model Customer {
-  id        String   @id @default(uuid())
-  name      String
-  email     String?  @unique
-  phone     String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  id          String       @id @default(uuid())
+  name        String
+  email       String?      @unique
+  phone       String       @unique
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   tickets     Ticket[]
   ticketNotes TicketNote[] @relation("TicketNoteCustomer")
 
@@ -50,27 +48,26 @@ model Customer {
 }
 
 model Ticket {
-  id                String       @id @default(uuid())
-  ticketNumber      String       @unique
-  title             String
-  description       String
-  status            TicketStatus @default(OPEN)
-  priority          Priority     @default(LOW)
+  id               String         @id @default(uuid())
+  ticketNumber     String         @unique
+  title            String
+  description      String
+  status           TicketStatus   @default(OPEN)
+  priority         Priority       @default(LOW)
+  customerId       String
+  assignedToId     String?
+  createdById      String
+  updatedById      String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
   ticketCategoryId String
-  customerId        String
-  assignedToId      String?
-  createdById       String
-  updatedById       String?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
-
-  ticketCategory TicketCategory @relation(fields: [ticketCategoryId], references: [id])
-  customer        Customer        @relation(fields: [customerId], references: [id])
-  assignedTo      User?           @relation("TicketAssignee", fields: [assignedToId], references: [id])
-  createdBy       User            @relation("TicketCreator", fields: [createdById], references: [id])
-  updatedBy       User?           @relation("TicketUpdater", fields: [updatedById], references: [id])
-  notes           TicketNote[]
-  activities      ActivityLog[]
+  activities       ActivityLog[]
+  assignedTo       User?          @relation("TicketAssignee", fields: [assignedToId], references: [id])
+  createdBy        User           @relation("TicketCreator", fields: [createdById], references: [id])
+  customer         Customer       @relation(fields: [customerId], references: [id])
+  ticketCategory   TicketCategory @relation(fields: [ticketCategoryId], references: [id])
+  updatedBy        User?          @relation("TicketUpdater", fields: [updatedById], references: [id])
+  notes            TicketNote[]
 
   @@index([ticketNumber])
   @@index([ticketCategoryId])
@@ -90,10 +87,9 @@ model ActivityLog {
   userId     String?
   metadata   Json?
   createdAt  DateTime           @default(now())
-
-  actor  User?   @relation("ActivityActor", fields: [actorId], references: [id], onDelete: SetNull)
-  ticket Ticket? @relation(fields: [ticketId], references: [id], onDelete: SetNull)
-  user   User?   @relation("ActivityTargetUser", fields: [userId], references: [id], onDelete: SetNull)
+  actor      User?              @relation("ActivityActor", fields: [actorId], references: [id])
+  ticket     Ticket?            @relation(fields: [ticketId], references: [id])
+  user       User?              @relation("ActivityTargetUser", fields: [userId], references: [id])
 
   @@index([createdAt])
   @@index([action])
@@ -108,24 +104,22 @@ model TicketCategory {
   name      String   @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  tickets Ticket[]
+  tickets   Ticket[]
 
   @@index([name])
 }
 
 model TicketNote {
-  id                  String   @id @default(uuid())
+  id                  String    @id @default(uuid())
   content             String
-  isInternal          Boolean  @default(true)
-  createdAt           DateTime @default(now())
+  isInternal          Boolean   @default(true)
+  createdAt           DateTime  @default(now())
   ticketId            String
   createdById         String?
   createdByCustomerId String?
-
-  ticket            Ticket    @relation(fields: [ticketId], references: [id])
-  createdBy         User?     @relation("TicketNoteCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  createdByCustomer Customer? @relation("TicketNoteCustomer", fields: [createdByCustomerId], references: [id], onDelete: SetNull)
+  createdByCustomer   Customer? @relation("TicketNoteCustomer", fields: [createdByCustomerId], references: [id])
+  createdBy           User?     @relation("TicketNoteCreator", fields: [createdById], references: [id])
+  ticket              Ticket    @relation(fields: [ticketId], references: [id])
 
   @@index([ticketId])
   @@index([createdById])
@@ -159,9 +153,9 @@ enum UserStatus {
 enum ActivityEntityType {
   TICKET
   USER
+  SYSTEM
   CUSTOMER
   TICKET_CATEGORY
-  SYSTEM
 }
 
 enum ActivityLogAction {
