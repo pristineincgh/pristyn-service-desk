@@ -9,28 +9,43 @@ datasource db {
 }
 
 model User {
-  id              String        @id @default(uuid())
-  name            String
-  email           String        @unique
-  password        String
-  role            UserRole      @default(AGENT)
-  phone           String?
-  emailVerified   Boolean       @default(false)
-  status          UserStatus    @default(ACTIVE)
-  supervisorId    String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  activityActions ActivityLog[] @relation("ActivityActor")
-  activityUsers   ActivityLog[] @relation("ActivityTargetUser")
-  assignedTickets Ticket[]      @relation("TicketAssignee")
-  createdTickets  Ticket[]      @relation("TicketCreator")
-  updatedTickets  Ticket[]      @relation("TicketUpdater")
-  ticketNotes     TicketNote[]  @relation("TicketNoteCreator")
-  supervisor      User?         @relation("SupervisorToAgent", fields: [supervisorId], references: [id])
-  agents          User[]        @relation("SupervisorToAgent")
+  id                      String                   @id @default(uuid())
+  name                    String
+  email                   String                   @unique
+  password                String
+  role                    UserRole                 @default(AGENT)
+  phone                   String?
+  emailVerified           Boolean                  @default(false)
+  status                  UserStatus               @default(ACTIVE)
+  supervisorId            String?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  activityActions         ActivityLog[]            @relation("ActivityActor")
+  activityUsers           ActivityLog[]            @relation("ActivityTargetUser")
+  assignedTickets         Ticket[]                 @relation("TicketAssignee")
+  createdTickets          Ticket[]                 @relation("TicketCreator")
+  updatedTickets          Ticket[]                 @relation("TicketUpdater")
+  ticketNotes             TicketNote[]             @relation("TicketNoteCreator")
+  supervisor              User?                    @relation("SupervisorToAgent", fields: [supervisorId], references: [id])
+  agents                  User[]                   @relation("SupervisorToAgent")
+  emailVerificationTokens EmailVerificationToken[]
 
   @@index([email])
   @@index([supervisorId])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model Customer {
