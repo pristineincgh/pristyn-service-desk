@@ -194,7 +194,17 @@ MODERATOR_NAME=System Moderator
 
 #### Frontend variables
 
-Add any frontend environment variables required for API routing or deployment in your Next.js environment config.
+Create `frontend/.env.local` with:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+API_URL=http://localhost:8000/api/v1
+```
+
+Notes:
+- `NEXT_PUBLIC_API_URL` is available to client-side code
+- `API_URL` is used by the Next.js server/API proxy layer
+- In local development, both should usually point to the backend API base URL
 
 ### 4. Run Prisma migrations
 
