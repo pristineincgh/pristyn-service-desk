@@ -13,6 +13,7 @@ import {
   formatActivityRelativeTimestamp,
   formatActivityTimestamp,
   getActivityActorLabel,
+  getActivityAuditEntries,
   getActivityDetails,
   getActivitySubjectLabel,
   getActivitySubjectSubLabel,
@@ -102,11 +103,40 @@ const ActivityLogTable = ({
       {
         id: 'details',
         header: 'Details',
-        cell: ({ row }) => (
-          <p className='max-w-lg text-sm text-muted-foreground'>
-            {getActivityDetails(row.original)}
-          </p>
-        ),
+        cell: ({ row }) => {
+          const auditEntries = getActivityAuditEntries(row.original);
+
+          return (
+            <div className='max-w-xl space-y-2'>
+              <p className='text-sm text-muted-foreground'>
+                {getActivityDetails(row.original)}
+              </p>
+
+              {auditEntries.length > 0 ? (
+                <div className='space-y-1 rounded-lg border bg-muted/30 p-3'>
+                  {auditEntries.map((entry) => (
+                    <div
+                      key={`${row.original.id}-${entry.field}`}
+                      className='grid gap-1 text-xs sm:grid-cols-[minmax(0,120px)_minmax(0,1fr)_minmax(0,1fr)] sm:items-start sm:gap-2'
+                    >
+                      <span className='font-medium text-foreground'>
+                        {entry.field}
+                      </span>
+                      <span className='text-muted-foreground'>
+                        <span className='font-medium'>Before:</span>{' '}
+                        {entry.previous}
+                      </span>
+                      <span className='text-muted-foreground'>
+                        <span className='font-medium'>After:</span>{' '}
+                        {entry.current}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          );
+        },
       },
     ],
     []

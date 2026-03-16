@@ -32,6 +32,7 @@ export const activityActionLabelMap: Record<ActivityLogAction, string> = {
   TICKET_PRIORITY_CHANGED: 'Priority changed',
   TICKET_DELETED: 'Ticket deleted',
   USER_CREATED: 'User created',
+  USER_UPDATED: 'User updated',
   USER_VERIFICATION_EMAIL_SENT: 'Verification email sent',
   USER_EMAIL_VERIFIED: 'Email verified',
   USER_ASSIGNED_TO_SUPERVISOR: 'Supervisor assigned',
@@ -61,6 +62,7 @@ const activityActionBadgeClassMap: Record<ActivityLogAction, string> = {
   TICKET_DELETED: 'border-0 bg-red-500/10 text-red-700 dark:text-red-300',
   USER_CREATED:
     'border-0 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+  USER_UPDATED: 'border-0 bg-slate-500/10 text-slate-700 dark:text-slate-300',
   USER_VERIFICATION_EMAIL_SENT:
     'border-0 bg-blue-500/10 text-blue-700 dark:text-blue-300',
   USER_EMAIL_VERIFIED:
@@ -136,12 +138,104 @@ const getChangedFieldsLabel = (metadata: Record<string, unknown>) => {
     name: 'Name',
     email: 'Email',
     phone: 'Phone',
+    role: 'Role',
+    emailVerified: 'Email verification',
+    supervisorId: 'Supervisor',
   };
 
   return changedFields
     .filter((field): field is string => typeof field === 'string')
     .map((field) => changedFieldLabelMap[field] ?? field)
     .join(', ');
+};
+
+const getChangedFieldLabels = (metadata: Record<string, unknown>) => {
+  const changedFields = metadata.changedFields;
+  if (!Array.isArray(changedFields) || changedFields.length === 0) {
+    return [] as string[];
+  }
+
+  const changedFieldLabelMap: Record<string, string> = {
+    assignedToId: 'Assignee',
+    status: 'Status',
+    priority: 'Priority',
+    title: 'Title',
+    description: 'Description',
+    categoryId: 'Category',
+    noteAdded: 'Note added',
+    noteDeleted: 'Note deleted',
+    noteContent: 'Note content',
+    noteVisibility: 'Note visibility',
+    name: 'Name',
+    email: 'Email',
+    phone: 'Phone',
+    role: 'Role',
+    emailVerified: 'Email verification',
+    supervisorId: 'Supervisor',
+    mustChangePassword: 'Must change password',
+  };
+
+  return changedFields
+    .filter((field): field is string => typeof field === 'string')
+    .map((field) => changedFieldLabelMap[field] ?? field);
+};
+
+const formatAuditValue = (value: unknown): string => {
+  if (value === null || value === undefined) {
+    return 'Empty';
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? 'Yes' : 'No';
+  }
+
+  if (typeof value === 'string') {
+    return value.trim().length > 0 ? formatEnumValue(value) : 'Empty';
+  }
+
+  if (typeof value === 'number') {
+    return String(value);
+  }
+
+  return JSON.stringify(value);
+};
+
+export const getActivityAuditEntries = (activity: ActivityLogItem) => {
+  const metadata = activity.metadata ?? {};
+  const previous =
+    metadata.previous && typeof metadata.previous === 'object'
+      ? (metadata.previous as Record<string, unknown>)
+      : null;
+  const current =
+    metadata.current && typeof metadata.current === 'object'
+      ? (metadata.current as Record<string, unknown>)
+      : null;
+  const changedFields = Array.isArray(metadata.changedFields)
+    ? metadata.changedFields.filter(
+        (field): field is string => typeof field === 'string',
+      )
+    : [];
+  const changedFieldLabels = getChangedFieldLabels(metadata);
+
+  if (!previous && !current) {
+    return [];
+  }
+
+  const keys =
+    changedFields.length > 0
+      ? changedFields
+      : Array.from(
+          new Set([
+            ...Object.keys(previous ?? {}),
+            ...Object.keys(current ?? {}),
+          ]),
+        );
+
+  return keys.map((key, index) => ({
+    field: changedFieldLabels[index] ?? key,
+    previous: formatAuditValue(previous?.[key]),
+    current: formatAuditValue(current?.[key]),
+  }));
 };
 
 export const formatActivityTimestamp = (value: string) => {
@@ -306,6 +400,10 @@ export const getActivityDetails = (activity: ActivityLogItem) => {
 
       return email ? `Created account for ${email}` : 'Created user account';
     }
+    case 'USER_UPDATED':
+      return getChangedFieldsLabel(metadata)
+        ? `Updated ${getChangedFieldsLabel(metadata)}`
+        : 'Updated user details';
     case 'USER_VERIFICATION_EMAIL_SENT': {
       const email = toDisplayValue(metadata.email);
       const reason = toDisplayValue(metadata.reason);

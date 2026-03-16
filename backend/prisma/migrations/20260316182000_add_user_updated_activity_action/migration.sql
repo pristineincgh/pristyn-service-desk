@@ -1,0 +1,1 @@
+ALTER TYPE "ActivityLogAction" ADD VALUE 'USER_UPDATED';

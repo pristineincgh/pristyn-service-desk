@@ -29,6 +29,7 @@ import { MailService } from 'src/mail/mail.service';
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
+  private readonly userUpdatedAction = 'USER_UPDATED' as ActivityLogAction;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -99,6 +100,53 @@ export class UsersService {
     }
 
     return passwordCharacters.join('');
+  }
+
+  private buildUserAuditSnapshot(
+    user: {
+      name: string;
+      email: string;
+      phone: string | null;
+      role: UserRole;
+      emailVerified: boolean;
+      supervisorId: string | null;
+      mustChangePassword?: boolean;
+      status?: UserStatus;
+    },
+    changedFields: string[],
+  ) {
+    const snapshot: Record<string, string | boolean | null> = {};
+
+    for (const field of changedFields) {
+      switch (field) {
+        case 'name':
+          snapshot.name = user.name;
+          break;
+        case 'email':
+          snapshot.email = user.email;
+          break;
+        case 'phone':
+          snapshot.phone = user.phone;
+          break;
+        case 'role':
+          snapshot.role = user.role;
+          break;
+        case 'emailVerified':
+          snapshot.emailVerified = user.emailVerified;
+          break;
+        case 'supervisorId':
+          snapshot.supervisorId = user.supervisorId;
+          break;
+        case 'mustChangePassword':
+          snapshot.mustChangePassword = user.mustChangePassword ?? null;
+          break;
+        case 'status':
+          snapshot.status = user.status ?? null;
+          break;
+      }
+    }
+
+    return snapshot;
   }
 
   async hashPassword(password: string) {
@@ -463,6 +511,29 @@ export class UsersService {
       select: this.safeUserSelect,
     });
 
+    const changedFields: string[] = [];
+    if (normalizedName !== undefined && normalizedName !== existingUser.name) {
+      changedFields.push('name');
+    }
+    if (normalizedEmail !== undefined && nextEmail !== existingUser.email) {
+      changedFields.push('email');
+    }
+    if (
+      normalizedPhone !== undefined &&
+      normalizedPhone !== existingUser.phone
+    ) {
+      changedFields.push('phone');
+    }
+    if (dto.role !== undefined && dto.role !== existingUser.role) {
+      changedFields.push('role');
+    }
+    if (updatedUser.emailVerified !== existingUser.emailVerified) {
+      changedFields.push('emailVerified');
+    }
+    if (updatedUser.supervisorId !== existingUser.supervisorId) {
+      changedFields.push('supervisorId');
+    }
+
     if (isEmailChanging) {
       await this.emailVerificationService.sendVerificationEmail(
         updatedUser.id,
@@ -471,6 +542,21 @@ export class UsersService {
           reason: 'email_changed_by_moderator',
         },
       );
+    }
+
+    if (changedFields.length > 0) {
+      await this.activityService.logActivity({
+        action: this.userUpdatedAction,
+        entityType: ActivityEntityType.USER,
+        entityId: updatedUser.id,
+        actorId,
+        userId: updatedUser.id,
+        metadata: {
+          changedFields,
+          previous: this.buildUserAuditSnapshot(existingUser, changedFields),
+          current: this.buildUserAuditSnapshot(updatedUser, changedFields),
+        },
+      });
     }
 
     if (
@@ -544,7 +630,7 @@ export class UsersService {
       }
     }
 
-    return this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
         ...(normalizedName !== undefined ? { name: normalizedName } : {}),
@@ -554,6 +640,40 @@ export class UsersService {
       },
       select: this.safeUserSelect,
     });
+
+    const changedFields: string[] = [];
+    if (normalizedName !== undefined && normalizedName !== existingUser.name) {
+      changedFields.push('name');
+    }
+    if (normalizedEmail !== undefined && nextEmail !== existingUser.email) {
+      changedFields.push('email');
+    }
+    if (
+      normalizedPhone !== undefined &&
+      normalizedPhone !== existingUser.phone
+    ) {
+      changedFields.push('phone');
+    }
+    if (updatedUser.emailVerified !== existingUser.emailVerified) {
+      changedFields.push('emailVerified');
+    }
+
+    if (changedFields.length > 0) {
+      await this.activityService.logActivity({
+        action: this.userUpdatedAction,
+        entityType: ActivityEntityType.USER,
+        entityId: updatedUser.id,
+        actorId: userId,
+        userId: updatedUser.id,
+        metadata: {
+          changedFields,
+          previous: this.buildUserAuditSnapshot(existingUser, changedFields),
+          current: this.buildUserAuditSnapshot(updatedUser, changedFields),
+        },
+      });
+    }
+
+    return updatedUser;
   }
 
   async resendUserVerificationEmail(userId: string, actorId: string) {

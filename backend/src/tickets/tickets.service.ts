@@ -205,6 +205,45 @@ export class TicketsService {
     };
   }
 
+  private buildTicketAuditSnapshot(
+    ticket: {
+      title?: string;
+      description?: string;
+      status?: TicketStatus;
+      priority?: Priority;
+      ticketCategoryId?: string;
+      assignedToId?: string | null;
+    },
+    changedFields: string[],
+  ) {
+    const snapshot: Record<string, string | null> = {};
+
+    for (const field of changedFields) {
+      switch (field) {
+        case 'title':
+          snapshot.title = ticket.title ?? null;
+          break;
+        case 'description':
+          snapshot.description = ticket.description ?? null;
+          break;
+        case 'status':
+          snapshot.status = ticket.status ?? null;
+          break;
+        case 'priority':
+          snapshot.priority = ticket.priority ?? null;
+          break;
+        case 'categoryId':
+          snapshot.categoryId = ticket.ticketCategoryId ?? null;
+          break;
+        case 'assignedToId':
+          snapshot.assignedToId = ticket.assignedToId ?? null;
+          break;
+      }
+    }
+
+    return snapshot;
+  }
+
   private async getRequesterOrThrow(userId: string) {
     const requester = await this.usersService.findById(userId);
 
@@ -645,9 +684,11 @@ export class TicketsService {
       select: {
         id: true,
         title: true,
+        description: true,
         assignedToId: true,
         status: true,
         priority: true,
+        ticketCategoryId: true,
       },
     });
 
@@ -717,6 +758,8 @@ export class TicketsService {
         ticketId: ticket.id,
         metadata: {
           changedFields,
+          previous: this.buildTicketAuditSnapshot(existingTicket, changedFields),
+          current: this.buildTicketAuditSnapshot(ticket, changedFields),
         },
       });
     }
@@ -813,6 +856,11 @@ export class TicketsService {
         ticketId: ticket.id,
         metadata: {
           changedFields: ['assignedToId'],
+          previous: this.buildTicketAuditSnapshot(ticket, ['assignedToId']),
+          current: this.buildTicketAuditSnapshot(
+            { assignedToId: dto.assignedToId },
+            ['assignedToId'],
+          ),
         },
       });
 
@@ -869,6 +917,8 @@ export class TicketsService {
         ticketId: ticket.id,
         metadata: {
           changedFields: ['status'],
+          previous: this.buildTicketAuditSnapshot(ticket, ['status']),
+          current: this.buildTicketAuditSnapshot({ status: dto.status }, ['status']),
         },
       });
 
@@ -983,6 +1033,11 @@ export class TicketsService {
         changedFields: ['noteAdded'],
         noteId: note.id,
         isInternal: note.isInternal,
+        previous: null,
+        current: {
+          noteContent: note.content,
+          noteVisibility: note.isInternal,
+        },
       },
     });
 
@@ -1052,6 +1107,22 @@ export class TicketsService {
         metadata: {
           changedFields,
           noteId: note.id,
+          previous: {
+            ...(changedFields.includes('noteContent')
+              ? { noteContent: existingNote.content }
+              : {}),
+            ...(changedFields.includes('noteVisibility')
+              ? { noteVisibility: existingNote.isInternal }
+              : {}),
+          },
+          current: {
+            ...(changedFields.includes('noteContent')
+              ? { noteContent: note.content }
+              : {}),
+            ...(changedFields.includes('noteVisibility')
+              ? { noteVisibility: note.isInternal }
+              : {}),
+          },
         },
       });
     }
@@ -1072,6 +1143,8 @@ export class TicketsService {
       },
       select: {
         id: true,
+        content: true,
+        isInternal: true,
         createdById: true,
       },
     });
@@ -1097,6 +1170,12 @@ export class TicketsService {
       metadata: {
         changedFields: ['noteDeleted'],
         noteId,
+        previous: {
+          noteId,
+          noteContent: existingNote.content,
+          noteVisibility: existingNote.isInternal,
+        },
+        current: null,
       },
     });
   }
