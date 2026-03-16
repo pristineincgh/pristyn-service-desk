@@ -6,6 +6,7 @@ import NewTicketModal from '@/components/common/modals/NewTicketModal';
 import AssignTicketModal from '@/components/common/modals/AssignTicketModal';
 import { EmptyState } from '@/components/common/EmptyState';
 import { Button } from '@/components/ui/button';
+import { formatUserDisplayName } from '@/lib/self-reference';
 import {
   Card,
   CardContent,
@@ -28,10 +29,12 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
+import { useAuthStore } from '@/store/auth-store';
 
 const AgentDashboardContent = () => {
   const [isNewTicketModalOpen, setIsNewTicketModalOpen] = useState(false);
   const [isAssignTicketModalOpen, setIsAssignTicketModalOpen] = useState(false);
+  const authUser = useAuthStore((state) => state.authUser);
   const ticketsQuery = useTickets(1, 50);
   const supervisorQuery = useUsersByScope();
   const tickets = useMemo(
@@ -150,7 +153,13 @@ const AgentDashboardContent = () => {
               ) : supervisor ? (
                 <div className='space-y-4'>
                   <div>
-                    <p className='text-lg font-semibold'>{supervisor.name}</p>
+                    <p className='text-lg font-semibold'>
+                      {formatUserDisplayName(
+                        supervisor.name,
+                        supervisor.id,
+                        authUser?.id
+                      )}
+                    </p>
                     <p className='text-sm text-muted-foreground'>
                       {supervisor.email}
                     </p>

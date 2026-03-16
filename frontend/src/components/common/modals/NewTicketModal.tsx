@@ -39,6 +39,7 @@ import { useCreateTicket } from '@/services/tickets/mutations';
 import { useTicketCategories } from '@/services/tickets/categories/queries';
 import { useUsersByScope } from '@/services/users/queries';
 import { useAuthStore } from '@/store/auth-store';
+import { formatUserDisplayName } from '@/lib/self-reference';
 import { UserShort } from '@/types/user-types';
 import { Controller, useForm } from 'react-hook-form';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -432,8 +433,11 @@ const NewTicketModal = ({ open, onOpenChange }: NewTicketModalProps) => {
                             <SelectContent>
                               {assignees.map((user) => (
                                 <SelectItem key={user.id} value={user.id}>
-                                  {user.name}
-                                  {authUser?.id === user.id ? ' (You)' : ''}
+                                  {formatUserDisplayName(
+                                    user.name,
+                                    user.id,
+                                    authUser?.id
+                                  )}
                                 </SelectItem>
                               ))}
                             </SelectContent>

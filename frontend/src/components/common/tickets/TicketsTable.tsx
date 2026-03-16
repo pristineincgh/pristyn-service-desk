@@ -6,7 +6,9 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { format, isValid, parseISO } from 'date-fns';
 import { DataTable } from '@/components/common/tables/data-table';
 import { Checkbox } from '@/components/ui/checkbox';
+import { formatUserDisplayName } from '@/lib/self-reference';
 import { TicketPriority, TicketShort } from '@/types/ticket-types';
+import { useAuthStore } from '@/store/auth-store';
 import { getStatusBadge } from '@/lib/get-status-badge';
 
 type TicketsTableProps = {
@@ -60,6 +62,7 @@ const TicketsTable = ({
   detailsBasePath = '/dashboard/moderator/tickets',
 }: TicketsTableProps) => {
   const router = useRouter();
+  const authUser = useAuthStore((state) => state.authUser);
   const visibleTicketIds = useMemo(
     () => tickets.map((ticket) => ticket.id),
     [tickets]
@@ -174,7 +177,14 @@ const TicketsTable = ({
       {
         accessorKey: 'assignedTo.name',
         header: 'Assigned To',
-        cell: ({ row }) => row.original.assignedTo?.name ?? 'Unassigned',
+        cell: ({ row }) =>
+          row.original.assignedTo
+            ? formatUserDisplayName(
+                row.original.assignedTo.name,
+                row.original.assignedTo.id,
+                authUser?.id
+              )
+            : 'Unassigned',
       },
       {
         accessorKey: 'createdAt',
@@ -188,6 +198,7 @@ const TicketsTable = ({
       onSelectionChange,
       selectedTicketIds,
       visibleTicketIds,
+      authUser?.id,
     ]
   );
 

@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import type { ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/common/tables/data-table';
+import { useAuthStore } from '@/store/auth-store';
 import type {
   ActivityLogItem,
   ActivityEntityType,
@@ -42,6 +43,7 @@ const ActivityLogTable = ({
   onPageChange,
   onPageSizeChange,
 }: ActivityLogTableProps) => {
+  const authUser = useAuthStore((state) => state.authUser);
   const columns = useMemo<ColumnDef<ActivityLogItem>[]>(
     () => [
       {
@@ -69,7 +71,7 @@ const ActivityLogTable = ({
         cell: ({ row }) => (
           <div className='space-y-0.5'>
             <p className='font-medium text-foreground'>
-              {getActivityActorLabel(row.original)}
+              {getActivityActorLabel(row.original, authUser?.id)}
             </p>
             <p className='text-xs text-muted-foreground'>
               {row.original.actor?.role ?? 'SYSTEM'}
@@ -90,7 +92,7 @@ const ActivityLogTable = ({
         cell: ({ row }) => (
           <div className='space-y-0.5'>
             <p className='font-medium text-foreground'>
-              {getActivitySubjectLabel(row.original)}
+              {getActivitySubjectLabel(row.original, authUser?.id)}
             </p>
             {row.original.entityType === 'TICKET' ? (
               <p className='text-sm text-muted-foreground'>
@@ -109,7 +111,7 @@ const ActivityLogTable = ({
           return (
             <div className='max-w-xl space-y-2'>
               <p className='text-sm text-muted-foreground'>
-                {getActivityDetails(row.original)}
+                {getActivityDetails(row.original, authUser?.id)}
               </p>
 
               {auditEntries.length > 0 ? (
@@ -139,7 +141,7 @@ const ActivityLogTable = ({
         },
       },
     ],
-    []
+    [authUser?.id]
   );
 
   return (

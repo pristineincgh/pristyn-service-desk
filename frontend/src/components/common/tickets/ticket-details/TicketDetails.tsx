@@ -32,6 +32,7 @@ import { useUsersByScope } from '@/services/users/queries';
 import { useAuthStore } from '@/store/auth-store';
 import { TicketNote, TicketPriority, TicketStatus } from '@/types/ticket-types';
 import { UserShort } from '@/types/user-types';
+import { formatUserDisplayName } from '@/lib/self-reference';
 import { MetricCard } from './ticket-details-primitives';
 import {
   formatRelativeTimestamp,
@@ -347,7 +348,15 @@ const TicketDetails = ({
           />
           <MetricCard
             label='Assigned To'
-            value={ticket.assignedTo?.name ?? 'Unassigned'}
+            value={
+              ticket.assignedTo
+                ? formatUserDisplayName(
+                    ticket.assignedTo.name,
+                    ticket.assignedTo.id,
+                    authUser?.id
+                  )
+                : 'Unassigned'
+            }
             hint={
               ticket.assignedTo
                 ? 'Ownership set'
@@ -357,7 +366,7 @@ const TicketDetails = ({
           <MetricCard
             label='Created'
             value={formatTimestamp(ticket.createdAt)}
-            hint={`By ${ticket.createdBy.name}`}
+            hint={`By ${formatUserDisplayName(ticket.createdBy.name, ticket.createdBy.id, authUser?.id)}`}
           />
           <MetricCard
             label='SLA Deadline'
@@ -368,7 +377,7 @@ const TicketDetails = ({
 
         <div className='grid gap-6 xl:grid-cols-[1.55fr_0.95fr]'>
           <div className='space-y-6'>
-            <TicketDetailsOverview ticket={ticket} />
+            <TicketDetailsOverview ticket={ticket} authUserId={authUser?.id} />
             <TicketDetailsNotesSection
               notes={notes}
               authUserId={authUser?.id}
@@ -392,6 +401,7 @@ const TicketDetails = ({
           <TicketDetailsSidebar
             ticket={ticket}
             assignees={assignees}
+            authUserId={authUser?.id}
             selectedStatus={selectedStatus ?? ticket.status}
             selectedPriority={selectedPriority ?? ticket.priority}
             selectedAssigneeId={selectedAssigneeId}

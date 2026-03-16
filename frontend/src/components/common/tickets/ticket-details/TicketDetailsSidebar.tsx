@@ -18,6 +18,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Spinner } from '@/components/ui/spinner';
 import { getStatusBadge } from '@/lib/get-status-badge';
+import { formatUserDisplayName } from '@/lib/self-reference';
 import { cn } from '@/lib/utils';
 import type {
   TicketDetail,
@@ -38,6 +39,7 @@ import { DetailRow } from './ticket-details-primitives';
 interface TicketDetailsSidebarProps {
   ticket: TicketDetail;
   assignees: UserShort[];
+  authUserId?: string;
   selectedStatus: TicketStatus;
   selectedPriority: TicketPriority;
   selectedAssigneeId: string;
@@ -77,6 +79,7 @@ const TicketDetailsSidebar = ({
   onSavePriority,
   onSaveAssignee,
   onDeleteTicket,
+  authUserId,
 }: TicketDetailsSidebarProps) => {
   return (
     <div className='space-y-6'>
@@ -179,7 +182,7 @@ const TicketDetailsSidebar = ({
               <SelectContent>
                 {assignees.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
-                    {user.name}
+                    {formatUserDisplayName(user.name, user.id, authUserId)}
                   </SelectItem>
                 ))}
               </SelectContent>

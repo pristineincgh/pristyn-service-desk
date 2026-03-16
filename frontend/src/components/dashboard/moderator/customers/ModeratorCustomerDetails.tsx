@@ -26,8 +26,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getStatusBadge } from '@/lib/get-status-badge';
+import { formatUserDisplayName } from '@/lib/self-reference';
 import { useDeleteCustomer } from '@/services/customers/mutations';
 import { useCustomerQuery } from '@/services/customers/queries';
+import { useAuthStore } from '@/store/auth-store';
 import { TicketPriority } from '@/types/ticket-types';
 import { toast } from 'sonner';
 import UpdateCustomerModal from './UpdateCustomerModal';
@@ -54,6 +56,7 @@ const ModeratorCustomerDetails = ({
   customerId,
 }: ModeratorCustomerDetailsProps) => {
   const router = useRouter();
+  const authUser = useAuthStore((state) => state.authUser);
   const [isEditCustomerModalOpen, setIsEditCustomerModalOpen] = useState(false);
   const [isDeleteCustomerDialogOpen, setIsDeleteCustomerDialogOpen] =
     useState(false);
@@ -361,7 +364,13 @@ const ModeratorCustomerDetails = ({
                         <TableCell>{getStatusBadge(ticket.status)}</TableCell>
                         <TableCell>{getPriorityLabel(ticket.priority)}</TableCell>
                         <TableCell>
-                          {ticket.assignedTo?.name ?? 'Unassigned'}
+                          {ticket.assignedTo
+                            ? formatUserDisplayName(
+                                ticket.assignedTo.name,
+                                ticket.assignedTo.id,
+                                authUser?.id
+                              )
+                            : 'Unassigned'}
                         </TableCell>
                         <TableCell>
                           {formatCustomerTimestamp(ticket.createdAt)}

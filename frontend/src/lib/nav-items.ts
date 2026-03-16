@@ -32,6 +32,16 @@ export const supervisorNavItems = [
     icon: LayoutDashboard,
     href: '/dashboard/supervisor',
   },
+  {
+    label: 'Tickets',
+    icon: Tickets,
+    href: '/dashboard/supervisor/tickets',
+  },
+  {
+    label: 'Team',
+    icon: Users,
+    href: '/dashboard/supervisor/team',
+  },
 ];
 
 export const moderatorNavItems = [

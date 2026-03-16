@@ -1,4 +1,8 @@
 import { Badge } from '@/components/ui/badge';
+import {
+  formatUserDisplayName,
+  formatUserReflexiveLabel,
+} from '@/lib/self-reference';
 import { cn } from '@/lib/utils';
 import {
   type ActivityEntityType,
@@ -256,21 +260,35 @@ export const formatActivityRelativeTimestamp = (value: string) => {
   return formatDistanceToNowStrict(parsed, { addSuffix: true });
 };
 
-export const getActivityActorLabel = (activity: ActivityLogItem) => {
+export const getActivityActorLabel = (
+  activity: ActivityLogItem,
+  currentUserId?: string
+) => {
   if (!activity.actor) {
     return 'System';
   }
 
-  return activity.actor.name;
+  return formatUserDisplayName(
+    activity.actor.name,
+    activity.actor.id,
+    currentUserId
+  );
 };
 
-export const getActivitySubjectLabel = (activity: ActivityLogItem) => {
+export const getActivitySubjectLabel = (
+  activity: ActivityLogItem,
+  currentUserId?: string
+) => {
   if (activity.ticket) {
     return activity.ticket.ticketNumber;
   }
 
   if (activity.user) {
-    return `${activity.user.name}`;
+    return formatUserDisplayName(
+      activity.user.name,
+      activity.user.id,
+      currentUserId
+    );
   }
 
   const metadata = activity.metadata ?? {};
@@ -311,8 +329,17 @@ export const getActivitySubjectSubLabel = (activity: ActivityLogItem) => {
   return activityEntityLabelMap[activity.entityType];
 };
 
-export const getActivityDetails = (activity: ActivityLogItem) => {
+export const getActivityDetails = (
+  activity: ActivityLogItem,
+  currentUserId?: string
+) => {
   const metadata = activity.metadata ?? {};
+  const activityUserName = activity.user?.name;
+  const activityUserId = activity.user?.id;
+  const userTargetLabel =
+    activityUserName && activityUserId
+      ? formatUserReflexiveLabel(activityUserName, activityUserId, currentUserId)
+      : null;
 
   switch (activity.action) {
     case 'TICKET_CREATED': {
@@ -436,16 +463,22 @@ export const getActivityDetails = (activity: ActivityLogItem) => {
         : 'User status updated';
     }
     case 'USER_PASSWORD_RESET':
-      return toDisplayValue(metadata.email)
-        ? `Issued temporary password for ${toDisplayValue(metadata.email)}`
+      return userTargetLabel
+        ? `Issued temporary password for ${userTargetLabel}`
+        : toDisplayValue(metadata.email)
+          ? `Issued temporary password for ${toDisplayValue(metadata.email)}`
         : 'Issued temporary password';
     case 'USER_PASSWORD_RESET_REQUESTED':
-      return toDisplayValue(metadata.email)
-        ? `Requested password reset for ${toDisplayValue(metadata.email)}`
+      return userTargetLabel
+        ? `Requested password reset for ${userTargetLabel}`
+        : toDisplayValue(metadata.email)
+          ? `Requested password reset for ${toDisplayValue(metadata.email)}`
         : 'Requested password reset';
     case 'USER_PASSWORD_RESET_COMPLETED':
-      return toDisplayValue(metadata.email)
-        ? `Reset password completed for ${toDisplayValue(metadata.email)}`
+      return userTargetLabel
+        ? `Reset password completed for ${userTargetLabel}`
+        : toDisplayValue(metadata.email)
+          ? `Reset password completed for ${toDisplayValue(metadata.email)}`
         : 'Completed password reset';
     case 'USER_LOGGED_IN':
       return 'Started a new session';

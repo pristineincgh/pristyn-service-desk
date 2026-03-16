@@ -262,6 +262,7 @@ export class TicketsService {
     if (requester.role === UserRole.SUPERVISOR) {
       return {
         OR: [
+          { assignedToId: requester.id },
           { createdById: requester.id },
           { createdBy: { supervisorId: requester.id } },
         ],
@@ -292,6 +293,7 @@ export class TicketsService {
   private isSupervisorTicketAccessible(
     ticket: {
       createdById: string;
+      assignedToId?: string | null;
       createdBy: {
         supervisorId: string | null;
       };
@@ -299,9 +301,10 @@ export class TicketsService {
     requesterId: string,
   ) {
     const isOwnTicket = ticket.createdById === requesterId;
+    const isAssignedToSupervisor = ticket.assignedToId === requesterId;
     const isSubordinateTicket = ticket.createdBy.supervisorId === requesterId;
 
-    return isOwnTicket || isSubordinateTicket;
+    return isOwnTicket || isAssignedToSupervisor || isSubordinateTicket;
   }
 
   private async validateTicketAccess(ticketId: string, requesterId: string) {

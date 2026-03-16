@@ -13,6 +13,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Spinner } from '@/components/ui/spinner';
 import { Textarea } from '@/components/ui/textarea';
+import { formatUserDisplayName } from '@/lib/self-reference';
 import type { TicketNote } from '@/types/ticket-types';
 import { UserRole } from '@/types/user-types';
 import {
@@ -95,9 +96,13 @@ const TicketDetailsNotesSection = ({
                   <div className='space-y-2'>
                     <div className='flex flex-wrap items-center gap-2'>
                       <Badge variant='outline' className='rounded-md'>
-                        {note.createdBy?.name ??
-                          note.createdByCustomer?.name ??
-                          'Unknown author'}
+                        {note.createdBy
+                          ? formatUserDisplayName(
+                              note.createdBy.name,
+                              note.createdBy.id,
+                              authUserId
+                            )
+                          : (note.createdByCustomer?.name ?? 'Unknown author')}
                       </Badge>
                       {note.isInternal ? (
                         <Badge
