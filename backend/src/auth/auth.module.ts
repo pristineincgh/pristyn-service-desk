@@ -8,6 +8,10 @@ import { UsersModule } from 'src/users/users.module';
 import { SessionAuthGuard } from './guards/session-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { ActivityModule } from 'src/activity/activity.module';
+import { MailModule } from 'src/mail/mail.module';
+import { EmailVerificationService } from './email-verification.service';
+import { PrismaService } from 'src/prisma.service';
+import { PasswordResetService } from './password-reset.service';
 
 @Module({
   imports: [
@@ -26,9 +30,23 @@ import { ActivityModule } from 'src/activity/activity.module';
     }),
     forwardRef(() => UsersModule),
     forwardRef(() => ActivityModule),
+    MailModule,
   ],
-  providers: [AuthService, SessionAuthGuard, RolesGuard],
+  providers: [
+    PrismaService,
+    AuthService,
+    EmailVerificationService,
+    PasswordResetService,
+    SessionAuthGuard,
+    RolesGuard,
+  ],
   controllers: [AuthController],
-  exports: [AuthService, SessionAuthGuard, RolesGuard],
+  exports: [
+    AuthService,
+    EmailVerificationService,
+    PasswordResetService,
+    SessionAuthGuard,
+    RolesGuard,
+  ],
 })
 export class AuthModule {}

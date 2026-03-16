@@ -13,11 +13,14 @@ import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AUTH_SESSION_ID_COOKIE } from './auth.constants';
 import type { LoginResponse, LogoutResponse } from './types/response.types';
 import { SessionAuthGuard } from './guards/session-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import type { AuthenticatedUser, SafeUser } from './types/user.types';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -65,6 +68,40 @@ export class AuthController {
       message: 'Profile updated successfully',
       user: updatedUser,
     };
+  }
+
+  @Post('email-verification/send')
+  @HttpCode(200)
+  @UseGuards(SessionAuthGuard)
+  async sendEmailVerification(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ message: string; expiresAt: string }> {
+    const result = await this.authService.sendEmailVerification(user.id);
+
+    return {
+      message: 'Verification email sent successfully',
+      expiresAt: result.expiresAt,
+    };
+  }
+
+  @Post('email-verification/verify')
+  @HttpCode(200)
+  async verifyEmail(@Body() dto: VerifyEmailDto): Promise<{ message: string }> {
+    return this.authService.verifyEmail(dto);
+  }
+
+  @Post('forgot-password')
+  @HttpCode(200)
+  async requestPasswordReset(
+    @Body() dto: RequestPasswordResetDto,
+  ): Promise<{ message: string }> {
+    return this.authService.requestPasswordReset(dto);
+  }
+
+  @Post('reset-password')
+  @HttpCode(200)
+  async resetPassword(@Body() dto: ResetPasswordDto): Promise<{ message: string }> {
+    return this.authService.resetPassword(dto);
   }
 
   @Post('change-password')

@@ -5,9 +5,11 @@ export interface SafeUser {
   id: string;
   email: string;
   name: string;
+  passwordUpdatedAt: Date;
   role: UserRole;
   phone: string | null;
   emailVerified: boolean;
+  mustChangePassword: boolean;
   status: UserStatus;
   supervisorId: string | null;
   createdAt: Date;

@@ -27,6 +27,12 @@ import { TokenExpiredError } from 'jsonwebtoken';
 import type { LoginResponse, TokenPair } from './types/response.types';
 import type { CookieOptions } from 'express';
 import { ActivityService } from 'src/activity/activity.service';
+import { EmailVerificationService } from './email-verification.service';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { MailService } from 'src/mail/mail.service';
+import { PasswordResetService } from './password-reset.service';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 interface SessionData {
   userId: string;
@@ -38,6 +44,11 @@ interface SessionData {
   createdAt: Date;
   lastActivityAt: Date;
 }
+
+type CachedSessionData = Omit<SessionData, 'createdAt' | 'lastActivityAt'> & {
+  createdAt: Date | string;
+  lastActivityAt: Date | string;
+};
 
 interface ValidatedSessionResult {
   user: AuthenticatedUser;
@@ -67,6 +78,9 @@ export class AuthService {
     private usersService: UsersService,
     private configService: ConfigService,
     private cacheService: RedisService,
+    private readonly mailService: MailService,
+    private readonly emailVerificationService: EmailVerificationService,
+    private readonly passwordResetService: PasswordResetService,
     @Inject(forwardRef(() => ActivityService))
     private readonly activityService: ActivityService,
   ) {
@@ -154,9 +168,19 @@ export class AuthService {
   private async getSession(
     sessionId: string,
   ): Promise<SessionData | undefined> {
-    return this.cacheService.get<SessionData>(
+    const session = await this.cacheService.get<CachedSessionData>(
       this.getSessionCacheKey(sessionId),
     );
+
+    if (!session) {
+      return undefined;
+    }
+
+    return {
+      ...session,
+      createdAt: new Date(session.createdAt),
+      lastActivityAt: new Date(session.lastActivityAt),
+    };
   }
 
   private async deleteSession(sessionId: string): Promise<void> {
@@ -331,6 +355,11 @@ export class AuthService {
       throw new UnauthorizedException('User account is inactive');
     }
 
+    if (session.createdAt.getTime() < userRecord.passwordUpdatedAt.getTime()) {
+      await this.deleteSession(sessionId);
+      throw new UnauthorizedException('Session has expired');
+    }
+
     const user = this.buildAuthenticatedUser(userRecord, sessionId);
 
     if (!expired) {
@@ -377,7 +406,43 @@ export class AuthService {
     userId: string,
     dto: UpdateProfileDto,
   ): Promise<SafeUser> {
-    return this.usersService.updateOwnProfile(userId, dto);
+    const existingUser = await this.usersService.findPublicById(userId);
+    const normalizedNextEmail = dto.email?.trim().toLowerCase();
+    const isEmailChanging =
+      normalizedNextEmail !== undefined &&
+      normalizedNextEmail !== existingUser.email;
+
+    const updatedUser = await this.usersService.updateOwnProfile(userId, dto);
+
+    if (isEmailChanging) {
+      await this.emailVerificationService.sendVerificationEmail(userId, {
+        actorId: userId,
+        reason: 'email_changed',
+      });
+
+      return this.usersService.findPublicById(userId);
+    }
+
+    return updatedUser;
+  }
+
+  async sendEmailVerification(userId: string) {
+    return this.emailVerificationService.sendVerificationEmail(userId, {
+      actorId: userId,
+      reason: 'self_service',
+    });
+  }
+
+  async verifyEmail(dto: VerifyEmailDto) {
+    return this.emailVerificationService.verifyEmail(dto.token);
+  }
+
+  async requestPasswordReset(dto: RequestPasswordResetDto) {
+    return this.passwordResetService.requestPasswordReset(dto.email);
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    return this.passwordResetService.resetPassword(dto.token, dto.newPassword);
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
@@ -387,7 +452,7 @@ export class AuthService {
       throw new UnauthorizedException('User does not exist');
     }
 
-    const passwordMatches = await bcrypt.compare(
+    const passwordMatches = await this.usersService.passwordMatches(
       dto.currentPassword,
       user.password,
     );
@@ -402,8 +467,14 @@ export class AuthService {
       );
     }
 
-    const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+    const hashedPassword = await this.usersService.hashPassword(dto.newPassword);
     await this.usersService.updatePasswordHash(userId, hashedPassword);
+    await this.mailService.sendPasswordChangedConfirmation({
+      receiverEmail: user.email,
+      htmlProps: {
+        firstName: user.name,
+      },
+    });
   }
 
   async logout(sessionId: string): Promise<void> {

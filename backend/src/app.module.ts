@@ -11,6 +11,7 @@ import { ActivityModule } from './activity/activity.module';
 import { CustomersModule } from './customers/customers.module';
 import { TicketCategoriesModule } from './ticket-categories/ticket-categories.module';
 import { TicketsModule } from './tickets/tickets.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { TicketsModule } from './tickets/tickets.module';
     CustomersModule,
     TicketCategoriesModule,
     TicketsModule,
+    MailModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

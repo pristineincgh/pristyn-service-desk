@@ -114,10 +114,27 @@ export class UsersController {
     @Param('id') id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const result = await this.usersService.resetUserPassword(id, user.id);
+    await this.usersService.resetUserPassword(id, user.id);
 
     return {
       message: 'User password reset successfully.',
+    };
+  }
+
+  @UseGuards(SessionAuthGuard, RolesGuard)
+  @Roles(UserRole.MODERATOR)
+  @Post(':id/email-verification/resend')
+  async resendUserVerificationEmail(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.usersService.resendUserVerificationEmail(
+      id,
+      user.id,
+    );
+
+    return {
+      message: 'Verification email sent successfully.',
       ...result,
     };
   }
@@ -141,7 +158,6 @@ export class UsersController {
     return {
       message: 'User created successfully.',
       user: createResult.user,
-      defaultPassword: createResult.defaultPassword,
     };
   }
 }

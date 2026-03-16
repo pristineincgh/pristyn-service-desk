@@ -19,6 +19,9 @@ export const configValidationSchema = Joi.object({
   COOKIE_SECURE: Joi.boolean().default(false),
   COOKIE_SAME_SITE: Joi.string().valid('strict', 'lax', 'none').default('lax'),
   CORS_ORIGIN: Joi.string().uri().required(),
+  PASSWORD_RESET_TTL_SECONDS: Joi.number().integer().positive().default(1800),
+  PASSWORD_RESET_PATH: Joi.string().default('/reset-password'),
+  PASSWORD_RESET_FRONTEND_BASE_URL: Joi.string().uri().optional(),
   MODERATOR_EMAIL: Joi.string().email().optional(),
   MODERATOR_PASSWORD: Joi.string().min(8).optional(),
   MODERATOR_NAME: Joi.string().min(1).default('System Moderator'),
@@ -46,6 +49,12 @@ export const configuration = () => ({
       ? parseInt(process.env.SESSION_EXPIRY, 10)
       : undefined,
   },
+  mailjet: {
+    apiKey: process.env.MAILJET_API_KEY,
+    apiSecret: process.env.MAILJET_API_SECRET,
+    from: process.env.MAILJET_FROM_EMAIL,
+    senderName: process.env.MAILJET_FROM_NAME,
+  },
   sla: {
     highPriorityHours: process.env.SLA_HIGH_PRIORITY_HOURS
       ? parseInt(process.env.SLA_HIGH_PRIORITY_HOURS, 10)
@@ -71,6 +80,13 @@ export const configuration = () => ({
   },
   cors: {
     origin: process.env.CORS_ORIGIN,
+  },
+  passwordReset: {
+    ttlSeconds: process.env.PASSWORD_RESET_TTL_SECONDS
+      ? parseInt(process.env.PASSWORD_RESET_TTL_SECONDS, 10)
+      : undefined,
+    path: process.env.PASSWORD_RESET_PATH,
+    frontendBaseUrl: process.env.PASSWORD_RESET_FRONTEND_BASE_URL,
   },
   moderator: {
     email: process.env.MODERATOR_EMAIL,
