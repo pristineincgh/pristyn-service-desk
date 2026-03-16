@@ -173,6 +173,12 @@ export class TicketCategoriesService {
             changedFields: ['name'],
             previousName: ticketCategory.name,
             name: normalizedCategory.name,
+            previous: {
+              name: ticketCategory.name,
+            },
+            current: {
+              name: normalizedCategory.name,
+            },
           },
         });
       }

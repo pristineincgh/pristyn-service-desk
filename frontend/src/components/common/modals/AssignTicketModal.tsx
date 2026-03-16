@@ -26,6 +26,7 @@ import { useCustomersQuery } from '@/services/customers/queries';
 import { useUpdateTicket } from '@/services/tickets/mutations';
 import { useUsersByScope } from '@/services/users/queries';
 import { useAuthStore } from '@/store/auth-store';
+import { formatUserDisplayName } from '@/lib/self-reference';
 import { TicketShort, TicketStatus } from '@/types/ticket-types';
 import { UserShort } from '@/types/user-types';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -276,8 +277,11 @@ const AssignTicketModal = ({
                       <SelectContent>
                         {assignees.map((user) => (
                           <SelectItem key={user.id} value={user.id}>
-                            {user.name}
-                            {authUser?.id === user.id ? ' (You)' : ''}
+                            {formatUserDisplayName(
+                              user.name,
+                              user.id,
+                              authUser?.id
+                            )}
                           </SelectItem>
                         ))}
                       </SelectContent>

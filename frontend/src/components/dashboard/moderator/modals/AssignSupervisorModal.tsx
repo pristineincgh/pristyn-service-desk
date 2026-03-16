@@ -24,6 +24,8 @@ import {
 } from '@/components/ui/select';
 import { useAssignSupervisor } from '@/services/users/mutations';
 import { useActiveUsers } from '@/services/users/queries';
+import { useAuthStore } from '@/store/auth-store';
+import { formatUserDisplayName } from '@/lib/self-reference';
 import { UserRole } from '@/types/user-types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
@@ -54,6 +56,7 @@ const AssignSupervisorModal = ({
   agent,
   forAgent = false,
 }: AssignSupervisorModalProps) => {
+  const authUser = useAuthStore((state) => state.authUser);
   const assignSupervisorMutation = useAssignSupervisor();
   const { data: activeUsersResponse, isLoading: isActiveUsersLoading } =
     useActiveUsers();
@@ -128,7 +131,7 @@ const AssignSupervisorModal = ({
           <DialogTitle>Assign Supervisor</DialogTitle>
           <DialogDescription>
             {agent
-              ? `Link ${agent.name} to the correct supervisor for scope and oversight.`
+              ? `Link ${formatUserDisplayName(agent.name, agent.id, authUser?.id)} to the correct supervisor for scope and oversight.`
               : 'Link an agent to the correct supervisor for scope and oversight.'}
           </DialogDescription>
         </DialogHeader>
@@ -160,7 +163,11 @@ const AssignSupervisorModal = ({
                     <SelectContent>
                       {agents.map((agent) => (
                         <SelectItem key={agent.id} value={agent.id}>
-                          {agent.name}
+                          {formatUserDisplayName(
+                            agent.name,
+                            agent.id,
+                            authUser?.id
+                          )}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -195,7 +202,11 @@ const AssignSupervisorModal = ({
                     <SelectContent>
                       {supervisors.map((supervisor) => (
                         <SelectItem key={supervisor.id} value={supervisor.id}>
-                          {supervisor.name}
+                          {formatUserDisplayName(
+                            supervisor.name,
+                            supervisor.id,
+                            authUser?.id
+                          )}
                         </SelectItem>
                       ))}
                     </SelectContent>

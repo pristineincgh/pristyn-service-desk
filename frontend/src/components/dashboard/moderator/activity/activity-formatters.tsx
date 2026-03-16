@@ -1,4 +1,8 @@
 import { Badge } from '@/components/ui/badge';
+import {
+  formatUserDisplayName,
+  formatUserReflexiveLabel,
+} from '@/lib/self-reference';
 import { cn } from '@/lib/utils';
 import {
   type ActivityEntityType,
@@ -32,9 +36,14 @@ export const activityActionLabelMap: Record<ActivityLogAction, string> = {
   TICKET_PRIORITY_CHANGED: 'Priority changed',
   TICKET_DELETED: 'Ticket deleted',
   USER_CREATED: 'User created',
+  USER_UPDATED: 'User updated',
+  USER_VERIFICATION_EMAIL_SENT: 'Verification email sent',
+  USER_EMAIL_VERIFIED: 'Email verified',
   USER_ASSIGNED_TO_SUPERVISOR: 'Supervisor assigned',
   USER_STATUS_CHANGED: 'Status changed',
   USER_PASSWORD_RESET: 'Password reset',
+  USER_PASSWORD_RESET_REQUESTED: 'Reset requested',
+  USER_PASSWORD_RESET_COMPLETED: 'Password reset completed',
   USER_LOGGED_IN: 'Logged in',
   USER_LOGGED_OUT: 'Logged out',
   CUSTOMER_CREATED: 'Customer created',
@@ -57,12 +66,21 @@ const activityActionBadgeClassMap: Record<ActivityLogAction, string> = {
   TICKET_DELETED: 'border-0 bg-red-500/10 text-red-700 dark:text-red-300',
   USER_CREATED:
     'border-0 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+  USER_UPDATED: 'border-0 bg-slate-500/10 text-slate-700 dark:text-slate-300',
+  USER_VERIFICATION_EMAIL_SENT:
+    'border-0 bg-blue-500/10 text-blue-700 dark:text-blue-300',
+  USER_EMAIL_VERIFIED:
+    'border-0 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
   USER_ASSIGNED_TO_SUPERVISOR:
     'border-0 bg-teal-500/10 text-teal-700 dark:text-teal-300',
   USER_STATUS_CHANGED:
     'border-0 bg-amber-500/10 text-amber-700 dark:text-amber-300',
   USER_PASSWORD_RESET:
     'border-0 bg-orange-500/10 text-orange-700 dark:text-orange-300',
+  USER_PASSWORD_RESET_REQUESTED:
+    'border-0 bg-blue-500/10 text-blue-700 dark:text-blue-300',
+  USER_PASSWORD_RESET_COMPLETED:
+    'border-0 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
   USER_LOGGED_IN:
     'border-0 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
   USER_LOGGED_OUT:
@@ -124,12 +142,104 @@ const getChangedFieldsLabel = (metadata: Record<string, unknown>) => {
     name: 'Name',
     email: 'Email',
     phone: 'Phone',
+    role: 'Role',
+    emailVerified: 'Email verification',
+    supervisorId: 'Supervisor',
   };
 
   return changedFields
     .filter((field): field is string => typeof field === 'string')
     .map((field) => changedFieldLabelMap[field] ?? field)
     .join(', ');
+};
+
+const getChangedFieldLabels = (metadata: Record<string, unknown>) => {
+  const changedFields = metadata.changedFields;
+  if (!Array.isArray(changedFields) || changedFields.length === 0) {
+    return [] as string[];
+  }
+
+  const changedFieldLabelMap: Record<string, string> = {
+    assignedToId: 'Assignee',
+    status: 'Status',
+    priority: 'Priority',
+    title: 'Title',
+    description: 'Description',
+    categoryId: 'Category',
+    noteAdded: 'Note added',
+    noteDeleted: 'Note deleted',
+    noteContent: 'Note content',
+    noteVisibility: 'Note visibility',
+    name: 'Name',
+    email: 'Email',
+    phone: 'Phone',
+    role: 'Role',
+    emailVerified: 'Email verification',
+    supervisorId: 'Supervisor',
+    mustChangePassword: 'Must change password',
+  };
+
+  return changedFields
+    .filter((field): field is string => typeof field === 'string')
+    .map((field) => changedFieldLabelMap[field] ?? field);
+};
+
+const formatAuditValue = (value: unknown): string => {
+  if (value === null || value === undefined) {
+    return 'Empty';
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? 'Yes' : 'No';
+  }
+
+  if (typeof value === 'string') {
+    return value.trim().length > 0 ? formatEnumValue(value) : 'Empty';
+  }
+
+  if (typeof value === 'number') {
+    return String(value);
+  }
+
+  return JSON.stringify(value);
+};
+
+export const getActivityAuditEntries = (activity: ActivityLogItem) => {
+  const metadata = activity.metadata ?? {};
+  const previous =
+    metadata.previous && typeof metadata.previous === 'object'
+      ? (metadata.previous as Record<string, unknown>)
+      : null;
+  const current =
+    metadata.current && typeof metadata.current === 'object'
+      ? (metadata.current as Record<string, unknown>)
+      : null;
+  const changedFields = Array.isArray(metadata.changedFields)
+    ? metadata.changedFields.filter(
+        (field): field is string => typeof field === 'string',
+      )
+    : [];
+  const changedFieldLabels = getChangedFieldLabels(metadata);
+
+  if (!previous && !current) {
+    return [];
+  }
+
+  const keys =
+    changedFields.length > 0
+      ? changedFields
+      : Array.from(
+          new Set([
+            ...Object.keys(previous ?? {}),
+            ...Object.keys(current ?? {}),
+          ]),
+        );
+
+  return keys.map((key, index) => ({
+    field: changedFieldLabels[index] ?? key,
+    previous: formatAuditValue(previous?.[key]),
+    current: formatAuditValue(current?.[key]),
+  }));
 };
 
 export const formatActivityTimestamp = (value: string) => {
@@ -150,21 +260,35 @@ export const formatActivityRelativeTimestamp = (value: string) => {
   return formatDistanceToNowStrict(parsed, { addSuffix: true });
 };
 
-export const getActivityActorLabel = (activity: ActivityLogItem) => {
+export const getActivityActorLabel = (
+  activity: ActivityLogItem,
+  currentUserId?: string
+) => {
   if (!activity.actor) {
     return 'System';
   }
 
-  return activity.actor.name;
+  return formatUserDisplayName(
+    activity.actor.name,
+    activity.actor.id,
+    currentUserId
+  );
 };
 
-export const getActivitySubjectLabel = (activity: ActivityLogItem) => {
+export const getActivitySubjectLabel = (
+  activity: ActivityLogItem,
+  currentUserId?: string
+) => {
   if (activity.ticket) {
     return activity.ticket.ticketNumber;
   }
 
   if (activity.user) {
-    return `${activity.user.name}`;
+    return formatUserDisplayName(
+      activity.user.name,
+      activity.user.id,
+      currentUserId
+    );
   }
 
   const metadata = activity.metadata ?? {};
@@ -205,8 +329,17 @@ export const getActivitySubjectSubLabel = (activity: ActivityLogItem) => {
   return activityEntityLabelMap[activity.entityType];
 };
 
-export const getActivityDetails = (activity: ActivityLogItem) => {
+export const getActivityDetails = (
+  activity: ActivityLogItem,
+  currentUserId?: string
+) => {
   const metadata = activity.metadata ?? {};
+  const activityUserName = activity.user?.name;
+  const activityUserId = activity.user?.id;
+  const userTargetLabel =
+    activityUserName && activityUserId
+      ? formatUserReflexiveLabel(activityUserName, activityUserId, currentUserId)
+      : null;
 
   switch (activity.action) {
     case 'TICKET_CREATED': {
@@ -294,6 +427,26 @@ export const getActivityDetails = (activity: ActivityLogItem) => {
 
       return email ? `Created account for ${email}` : 'Created user account';
     }
+    case 'USER_UPDATED':
+      return getChangedFieldsLabel(metadata)
+        ? `Updated ${getChangedFieldsLabel(metadata)}`
+        : 'Updated user details';
+    case 'USER_VERIFICATION_EMAIL_SENT': {
+      const email = toDisplayValue(metadata.email);
+      const reason = toDisplayValue(metadata.reason);
+
+      if (email && reason) {
+        return `Sent verification email to ${email} (${formatEnumValue(reason).toLowerCase()})`;
+      }
+
+      return email
+        ? `Sent verification email to ${email}`
+        : 'Sent verification email';
+    }
+    case 'USER_EMAIL_VERIFIED':
+      return toDisplayValue(metadata.email)
+        ? `Verified email address ${toDisplayValue(metadata.email)}`
+        : 'Verified email address';
     case 'USER_ASSIGNED_TO_SUPERVISOR': {
       const previousSupervisorId = toDisplayValue(
         metadata.previousSupervisorId
@@ -310,9 +463,23 @@ export const getActivityDetails = (activity: ActivityLogItem) => {
         : 'User status updated';
     }
     case 'USER_PASSWORD_RESET':
-      return toDisplayValue(metadata.email)
-        ? `Issued temporary password for ${toDisplayValue(metadata.email)}`
+      return userTargetLabel
+        ? `Issued temporary password for ${userTargetLabel}`
+        : toDisplayValue(metadata.email)
+          ? `Issued temporary password for ${toDisplayValue(metadata.email)}`
         : 'Issued temporary password';
+    case 'USER_PASSWORD_RESET_REQUESTED':
+      return userTargetLabel
+        ? `Requested password reset for ${userTargetLabel}`
+        : toDisplayValue(metadata.email)
+          ? `Requested password reset for ${toDisplayValue(metadata.email)}`
+        : 'Requested password reset';
+    case 'USER_PASSWORD_RESET_COMPLETED':
+      return userTargetLabel
+        ? `Reset password completed for ${userTargetLabel}`
+        : toDisplayValue(metadata.email)
+          ? `Reset password completed for ${toDisplayValue(metadata.email)}`
+        : 'Completed password reset';
     case 'USER_LOGGED_IN':
       return 'Started a new session';
     case 'USER_LOGGED_OUT':

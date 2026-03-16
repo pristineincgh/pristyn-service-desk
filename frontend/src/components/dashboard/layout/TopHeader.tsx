@@ -21,6 +21,7 @@ import { useLogout } from '@/services/auth/mutations';
 import { getDashboardByRole } from '@/lib/roles';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { getUserInitials } from '../moderator/users/user-formatters';
+import ThemeToggle from '@/components/common/ThemeToggle';
 
 const TopHeader = () => {
   const router = useRouter();
@@ -56,6 +57,8 @@ const TopHeader = () => {
           </div>
 
           <div className='ml-4 flex items-center gap-4'>
+            <ThemeToggle />
+
             {/* Notification Bell */}
             <Button
               variant='ghost'
@@ -72,7 +75,7 @@ const TopHeader = () => {
               <DropdownMenuTrigger asChild>
                 <Button variant='ghost' className='gap-2 h-12'>
                   <Avatar>
-                    <AvatarFallback className=' bg-primary/20 text-primary'>
+                    <AvatarFallback className=' bg-primary/20 text-primary dark:text-sidebar-primary'>
                       {getUserInitials(authUser?.name || '')}
                     </AvatarFallback>
                   </Avatar>

@@ -5,6 +5,7 @@ import {
   CreateUserPayload,
   CreateUserResponse,
   ResetUserPasswordResponse,
+  ResendUserVerificationEmailResponse,
   UpdateUserPayload,
   UpdateUserResponse,
   UpdateUserStatusPayload,
@@ -83,4 +84,15 @@ export const resetUserPassword = async (
   return apiFetch(`${BASE_URL}/${encodeURIComponent(id)}/reset-password`, {
     method: 'POST',
   });
+};
+
+export const resendUserVerificationEmail = async (
+  id: string
+): Promise<ResendUserVerificationEmailResponse> => {
+  return apiFetch(
+    `${BASE_URL}/${encodeURIComponent(id)}/email-verification/resend`,
+    {
+      method: 'POST',
+    }
+  );
 };

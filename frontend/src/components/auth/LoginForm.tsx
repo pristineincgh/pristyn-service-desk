@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -78,37 +78,44 @@ const LoginForm = () => {
   }, [form]);
 
   return (
-    <div className='w-full max-w-md space-y-8'>
-      {/* Logo/Branding */}
-      <div className='text-center'>
-        <div className='inline-flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10 mb-4'>
-          <Mail className='h-6 w-6 text-primary' />
+    <div className='w-full max-w-md'>
+      <Card className='overflow-hidden rounded-[2rem] border-border/80 bg-card/95 py-0 shadow-[0_30px_80px_-28px_color-mix(in_oklab,var(--foreground)_25%,transparent)] backdrop-blur'>
+        <div className='border-b border-border/80 bg-[linear-gradient(135deg,color-mix(in_oklab,var(--primary)_14%,transparent),color-mix(in_oklab,var(--accent)_42%,transparent),transparent)] px-6 py-6 sm:px-8'>
+          <div className='inline-flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/20 bg-background/80 text-primary shadow-sm'>
+            <ShieldCheck className='h-7 w-7' />
+          </div>
+          <div className='mt-4 space-y-2'>
+            <p className='text-sm font-semibold text-muted-foreground'>Pristyn</p>
+            <p className='text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground'>
+              Welcome back
+            </p>
+            <h1 className='text-3xl font-bold tracking-tight text-foreground'>
+              Sign in to your workspace
+            </h1>
+            <p className='text-sm leading-6 text-muted-foreground'>
+              Enter your email and password to continue.
+            </p>
+          </div>
         </div>
-        <h1 className='text-3xl font-bold'>Pristyn</h1>
-        <p className='mt-2 text-muted-foreground'>Service Desk Platform</p>
-      </div>
 
-      {/* Login Card */}
-      <Card>
-        <CardContent>
+        <CardContent className='px-6 py-6 sm:px-8 sm:py-8'>
           <form onSubmit={form.handleSubmit(handleLogin)} className='space-y-5'>
             <FieldGroup>
-              {/* Email Field */}
               <Controller
                 name='email'
                 control={form.control}
                 render={({ field, fieldState }) => (
-                  <Field data-invalid={fieldState.invalid}>
-                    <FieldLabel htmlFor='email'>Email</FieldLabel>
-                    <div className='relative'>
-                      <Mail className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none' />
+                    <Field data-invalid={fieldState.invalid}>
+                      <FieldLabel htmlFor='email'>Email address</FieldLabel>
+                      <div className='relative'>
+                      <Mail className='pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
                       <Input
                         {...field}
                         id='email'
                         aria-invalid={fieldState.invalid}
                         placeholder='you@example.com'
                         className={cn(
-                          'w-full pl-10',
+                          'h-12 rounded-xl border-border bg-background pl-10 shadow-none',
                           fieldState.invalid &&
                             'ring-2 ring-destructive/50 focus-visible:ring-destructive/70'
                         )}
@@ -122,7 +129,6 @@ const LoginForm = () => {
                 )}
               />
 
-              {/* Password Field */}
               <Controller
                 name='password'
                 control={form.control}
@@ -130,7 +136,7 @@ const LoginForm = () => {
                   <Field data-invalid={fieldState.invalid}>
                     <FieldLabel htmlFor='password'>Password</FieldLabel>
                     <div className='relative'>
-                      <Lock className='absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none' />
+                      <Lock className='pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
                       <Input
                         {...field}
                         id='password'
@@ -138,7 +144,7 @@ const LoginForm = () => {
                         aria-invalid={fieldState.invalid}
                         placeholder='Enter your password'
                         className={cn(
-                          'w-full pl-10 pr-10',
+                          'h-12 rounded-xl border-border bg-background pl-10 pr-10 shadow-none',
                           fieldState.invalid &&
                             'ring-2 ring-destructive/50 focus-visible:ring-destructive/70'
                         )}
@@ -148,7 +154,7 @@ const LoginForm = () => {
                         type='button'
                         size='icon'
                         variant='ghost'
-                        className="hover:bg-transparent text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 group-hover:text-muted-foreground group-focus-within:text-muted-foreground transition-all duration-300 ease-in-out [&_svg:not([class*='size-'])]:size-4"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-all duration-300 ease-in-out hover:bg-transparent [&_svg:not([class*='size-'])]:size-4"
                         onClick={() => setShowPassword(!showPassword)}
                       >
                         {showPassword ? <EyeOff /> : <Eye />}
@@ -162,7 +168,6 @@ const LoginForm = () => {
               />
             </FieldGroup>
 
-            {/* Remember Me & Forgot Password */}
             <div className='flex items-center justify-between text-sm'>
               <Field orientation='horizontal'>
                 <Checkbox
@@ -174,19 +179,28 @@ const LoginForm = () => {
                   }
                   disabled={isLoading}
                 />
-                <Label htmlFor='rememberMe-checkbox'>Remember me</Label>
+                <Label
+                  htmlFor='rememberMe-checkbox'
+                  className='text-muted-foreground'
+                >
+                  Remember me
+                </Label>
               </Field>
               <Button
                 type='button'
                 variant={'link'}
+                className='px-0 font-medium text-primary hover:text-primary/90'
                 onClick={() => handleForgotPassword()}
               >
                 Forgot password?
               </Button>
             </div>
 
-            {/* Submit Button */}
-            <Button type='submit' disabled={isLoading} className='w-full h-12'>
+            <Button
+              type='submit'
+              disabled={isLoading}
+              className='h-12 w-full rounded-xl'
+            >
               {isLoading ? (
                 <>
                   <Spinner />

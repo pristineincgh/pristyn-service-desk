@@ -2,9 +2,11 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
+  forwardRef,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { AssignAgentDto } from './dto/assign-agent.dto';
@@ -21,24 +23,32 @@ import {
 import { PrismaService } from 'src/prisma.service';
 import { SafeUser } from 'src/auth/types/user.types';
 import { ActivityService } from 'src/activity/activity.service';
+import { EmailVerificationService } from 'src/auth/email-verification.service';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
+  private readonly userUpdatedAction = 'USER_UPDATED' as ActivityLogAction;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly activityService: ActivityService,
+    @Inject(forwardRef(() => EmailVerificationService))
+    private readonly emailVerificationService: EmailVerificationService,
+    private readonly mailService: MailService,
   ) {}
 
   private readonly safeUserSelect = {
     id: true,
     name: true,
     email: true,
+    passwordUpdatedAt: true,
     role: true,
     phone: true,
     status: true,
     emailVerified: true,
+    mustChangePassword: true,
     supervisorId: true,
     createdAt: true,
     updatedAt: true,
@@ -92,6 +102,61 @@ export class UsersService {
     return passwordCharacters.join('');
   }
 
+  private buildUserAuditSnapshot(
+    user: {
+      name: string;
+      email: string;
+      phone: string | null;
+      role: UserRole;
+      emailVerified: boolean;
+      supervisorId: string | null;
+      mustChangePassword?: boolean;
+      status?: UserStatus;
+    },
+    changedFields: string[],
+  ) {
+    const snapshot: Record<string, string | boolean | null> = {};
+
+    for (const field of changedFields) {
+      switch (field) {
+        case 'name':
+          snapshot.name = user.name;
+          break;
+        case 'email':
+          snapshot.email = user.email;
+          break;
+        case 'phone':
+          snapshot.phone = user.phone;
+          break;
+        case 'role':
+          snapshot.role = user.role;
+          break;
+        case 'emailVerified':
+          snapshot.emailVerified = user.emailVerified;
+          break;
+        case 'supervisorId':
+          snapshot.supervisorId = user.supervisorId;
+          break;
+        case 'mustChangePassword':
+          snapshot.mustChangePassword = user.mustChangePassword ?? null;
+          break;
+        case 'status':
+          snapshot.status = user.status ?? null;
+          break;
+      }
+    }
+
+    return snapshot;
+  }
+
+  async hashPassword(password: string) {
+    return bcrypt.hash(password, 10);
+  }
+
+  async passwordMatches(candidatePassword: string, passwordHash: string) {
+    return bcrypt.compare(candidatePassword, passwordHash);
+  }
+
   async ensureModeratorAccount(input: {
     email: string;
     password: string;
@@ -106,7 +171,7 @@ export class UsersService {
       return existingUser;
     }
 
-    const hashedPassword = await bcrypt.hash(input.password, 10);
+    const hashedPassword = await this.hashPassword(input.password);
 
     const moderator = await this.prisma.user.create({
       data: {
@@ -115,6 +180,7 @@ export class UsersService {
         password: hashedPassword,
         role: UserRole.MODERATOR,
         emailVerified: true,
+        mustChangePassword: false,
       },
       select: this.safeUserSelect,
     });
@@ -218,9 +284,8 @@ export class UsersService {
       throw new ConflictException('User with this email already exists');
     }
 
-    // const defaultPassword = this.generateUserDefaultPassword();
-    const defaultPassword = 'P@ssw0rd';
-    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+    const defaultPassword = this.generateUserDefaultPassword();
+    const hashedPassword = await this.hashPassword(defaultPassword);
 
     // Create user
     const user = await this.prisma.user.create({
@@ -247,6 +312,15 @@ export class UsersService {
       metadata: {
         role: user.role,
         email: user.email,
+      },
+    });
+
+    await this.emailVerificationService.sendVerificationEmail(user.id, {
+      actorId: actorId ?? null,
+      reason: 'user_created',
+      credentials: {
+        email: user.email,
+        password: defaultPassword,
       },
     });
 
@@ -378,6 +452,7 @@ export class UsersService {
       normalizedEmail !== undefined
         ? normalizedEmail.toLowerCase()
         : existingUser.email;
+    const isEmailChanging = nextEmail !== existingUser.email;
 
     if (nextEmail !== existingUser.email) {
       const duplicateUser = await this.findByEmail(nextEmail);
@@ -424,15 +499,65 @@ export class UsersService {
         ...(normalizedEmail !== undefined ? { email: nextEmail } : {}),
         ...(normalizedPhone !== undefined ? { phone: normalizedPhone } : {}),
         ...(dto.role !== undefined ? { role: dto.role } : {}),
-        ...(dto.emailVerified !== undefined
-          ? { emailVerified: dto.emailVerified }
-          : {}),
+        ...(isEmailChanging
+          ? { emailVerified: false }
+          : dto.emailVerified !== undefined
+            ? { emailVerified: dto.emailVerified }
+            : {}),
         ...(validatedSupervisorId !== undefined
           ? { supervisorId: validatedSupervisorId }
           : {}),
       },
       select: this.safeUserSelect,
     });
+
+    const changedFields: string[] = [];
+    if (normalizedName !== undefined && normalizedName !== existingUser.name) {
+      changedFields.push('name');
+    }
+    if (normalizedEmail !== undefined && nextEmail !== existingUser.email) {
+      changedFields.push('email');
+    }
+    if (
+      normalizedPhone !== undefined &&
+      normalizedPhone !== existingUser.phone
+    ) {
+      changedFields.push('phone');
+    }
+    if (dto.role !== undefined && dto.role !== existingUser.role) {
+      changedFields.push('role');
+    }
+    if (updatedUser.emailVerified !== existingUser.emailVerified) {
+      changedFields.push('emailVerified');
+    }
+    if (updatedUser.supervisorId !== existingUser.supervisorId) {
+      changedFields.push('supervisorId');
+    }
+
+    if (isEmailChanging) {
+      await this.emailVerificationService.sendVerificationEmail(
+        updatedUser.id,
+        {
+          actorId,
+          reason: 'email_changed_by_moderator',
+        },
+      );
+    }
+
+    if (changedFields.length > 0) {
+      await this.activityService.logActivity({
+        action: this.userUpdatedAction,
+        entityType: ActivityEntityType.USER,
+        entityId: updatedUser.id,
+        actorId,
+        userId: updatedUser.id,
+        metadata: {
+          changedFields,
+          previous: this.buildUserAuditSnapshot(existingUser, changedFields),
+          current: this.buildUserAuditSnapshot(updatedUser, changedFields),
+        },
+      });
+    }
 
     if (
       validatedSupervisorId !== undefined &&
@@ -495,6 +620,7 @@ export class UsersService {
       normalizedEmail !== undefined
         ? normalizedEmail.toLowerCase()
         : existingUser.email;
+    const isEmailChanging = nextEmail !== existingUser.email;
 
     if (nextEmail !== existingUser.email) {
       const duplicateUser = await this.findByEmail(nextEmail);
@@ -504,14 +630,69 @@ export class UsersService {
       }
     }
 
-    return this.prisma.user.update({
+    const updatedUser = await this.prisma.user.update({
       where: { id: userId },
       data: {
         ...(normalizedName !== undefined ? { name: normalizedName } : {}),
         ...(normalizedEmail !== undefined ? { email: nextEmail } : {}),
         ...(normalizedPhone !== undefined ? { phone: normalizedPhone } : {}),
+        ...(isEmailChanging ? { emailVerified: false } : {}),
       },
       select: this.safeUserSelect,
+    });
+
+    const changedFields: string[] = [];
+    if (normalizedName !== undefined && normalizedName !== existingUser.name) {
+      changedFields.push('name');
+    }
+    if (normalizedEmail !== undefined && nextEmail !== existingUser.email) {
+      changedFields.push('email');
+    }
+    if (
+      normalizedPhone !== undefined &&
+      normalizedPhone !== existingUser.phone
+    ) {
+      changedFields.push('phone');
+    }
+    if (updatedUser.emailVerified !== existingUser.emailVerified) {
+      changedFields.push('emailVerified');
+    }
+
+    if (changedFields.length > 0) {
+      await this.activityService.logActivity({
+        action: this.userUpdatedAction,
+        entityType: ActivityEntityType.USER,
+        entityId: updatedUser.id,
+        actorId: userId,
+        userId: updatedUser.id,
+        metadata: {
+          changedFields,
+          previous: this.buildUserAuditSnapshot(existingUser, changedFields),
+          current: this.buildUserAuditSnapshot(updatedUser, changedFields),
+        },
+      });
+    }
+
+    return updatedUser;
+  }
+
+  async resendUserVerificationEmail(userId: string, actorId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: this.safeUserSelect,
+    });
+
+    if (!user) {
+      throw new NotFoundException('User does not exist');
+    }
+
+    if (user.emailVerified) {
+      throw new BadRequestException('User email is already verified');
+    }
+
+    return this.emailVerificationService.sendVerificationEmail(user.id, {
+      actorId,
+      reason: 'moderator_resend',
     });
   }
 
@@ -561,6 +742,7 @@ export class UsersService {
       where: { id: userId },
       select: {
         id: true,
+        name: true,
         email: true,
       },
     });
@@ -569,14 +751,15 @@ export class UsersService {
       throw new NotFoundException('User does not exist');
     }
 
-    // const defaultPassword = this.generateUserDefaultPassword();
-    const defaultPassword = 'P@ssw0rd';
-    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+    const defaultPassword = this.generateUserDefaultPassword();
+    const hashedPassword = await this.hashPassword(defaultPassword);
 
     await this.prisma.user.update({
       where: { id: userId },
       data: {
         password: hashedPassword,
+        passwordUpdatedAt: new Date(),
+        mustChangePassword: true,
       },
     });
 
@@ -591,9 +774,16 @@ export class UsersService {
       },
     });
 
+    await this.mailService.sendPasswordResetNotification({
+      receiverEmail: existingUser.email,
+      htmlProps: {
+        firstName: existingUser.name,
+        temporaryPassword: defaultPassword,
+      },
+    });
+
     return {
       userId,
-      defaultPassword,
     };
   }
 
@@ -602,6 +792,8 @@ export class UsersService {
       where: { id: userId },
       data: {
         password,
+        passwordUpdatedAt: new Date(),
+        mustChangePassword: false,
       },
     });
   }

@@ -1,5 +1,7 @@
 'use client';
 
+import EmailVerificationBanner from '@/components/dashboard/layout/EmailVerificationBanner';
+import ForcePasswordChangeDialog from '@/components/dashboard/layout/ForcePasswordChangeDialog';
 import SidebarNav from '@/components/dashboard/layout/SidebarNav';
 import TopHeader from '@/components/dashboard/layout/TopHeader';
 import DashboardProvider from '@/providers/DashboardProvider';
@@ -15,6 +17,8 @@ const DashboardLayout = ({ children }: { children: ReactNode }) => {
         {/* Main Content */}
         <div className='flex flex-1 flex-col ml-64'>
           <TopHeader />
+          <EmailVerificationBanner />
+          <ForcePasswordChangeDialog />
 
           {/* Content Area */}
           <main className='flex-1'>

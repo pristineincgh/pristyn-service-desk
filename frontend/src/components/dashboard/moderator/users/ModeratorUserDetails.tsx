@@ -22,11 +22,14 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import {
+  useResendUserVerificationEmail,
   useResetUserPassword,
   useUpdateUserStatus,
 } from '@/services/users/mutations';
 import { useAllUsers, useUserDetailByScope } from '@/services/users/queries';
 import { cn } from '@/lib/utils';
+import { formatUserDisplayName, formatUserObjectLabel } from '@/lib/self-reference';
+import { useAuthStore } from '@/store/auth-store';
 import { UserRole, UserStatus } from '@/types/user-types';
 import { toast } from 'sonner';
 import UpdateUserModal from './UpdateUserModal';
@@ -57,6 +60,7 @@ type ModeratorUserDetailsProps = {
 
 const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
   const router = useRouter();
+  const authUser = useAuthStore((state) => state.authUser);
   const [isAssignSupervisorModalOpen, setIsAssignSupervisorModalOpen] =
     useState(false);
   const [isAssignAgentModalOpen, setIsAssignAgentModalOpen] = useState(false);
@@ -73,11 +77,12 @@ const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
   const { data: allUsersResponse } = useAllUsers();
   const updateUserStatusMutation = useUpdateUserStatus();
   const resetUserPasswordMutation = useResetUserPassword();
+  const resendUserVerificationEmailMutation = useResendUserVerificationEmail();
 
   const allUsers = allUsersResponse?.users ?? [];
 
   const supervisor = user?.supervisorId
-    ? allUsers.find((candidate) => candidate.id === user.supervisorId) ?? null
+    ? (allUsers.find((candidate) => candidate.id === user.supervisorId) ?? null)
     : null;
 
   const directReports = allUsers.filter(
@@ -160,10 +165,19 @@ const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
       const response = await resetUserPasswordMutation.mutateAsync(user.id);
 
       toast.success(response.message || 'Password reset successfully');
-      toast.info('Temporary password generated', {
-        description: response.defaultPassword,
-      });
       setIsResetPasswordDialogOpen(false);
+    } catch {
+      // Error toast handled in mutation hook.
+    }
+  };
+
+  const handleResendVerificationEmail = async () => {
+    try {
+      const response = await resendUserVerificationEmailMutation.mutateAsync(
+        user.id
+      );
+
+      toast.success(response.message || 'Verification email sent successfully');
     } catch {
       // Error toast handled in mutation hook.
     }
@@ -189,6 +203,7 @@ const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
                   <div className='flex flex-wrap items-center gap-2'>
                     <h1 className='text-2xl font-semibold tracking-tight text-foreground'>
                       {user.name}
+                      {authUser?.id === user.id ? ' (You)' : ''}
                     </h1>
                     <Badge
                       variant='secondary'
@@ -239,10 +254,16 @@ const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
             <div className='flex flex-wrap gap-2'>
               <Button
                 variant='outline'
-                // onClick={() => setIsEditUserModalOpen(true)}
+                onClick={handleResendVerificationEmail}
+                disabled={
+                  user.emailVerified ||
+                  resendUserVerificationEmailMutation.isPending
+                }
               >
                 <BiMailSend />
-                Resend Email Verification
+                {resendUserVerificationEmailMutation.isPending
+                  ? 'Sending...'
+                  : 'Resend Email Verification'}
               </Button>
             </div>
           </CardContent>
@@ -264,7 +285,15 @@ const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
           {user.role === UserRole.AGENT ? (
             <KPICard
               title='Supervisor'
-              value={supervisor?.name ?? 'None'}
+              value={
+                supervisor
+                  ? formatUserDisplayName(
+                      supervisor.name,
+                      supervisor.id,
+                      authUser?.id
+                    )
+                  : 'None'
+              }
               theme='blue'
               icon={<Building2 className='h-5 w-5' />}
             />
@@ -318,7 +347,11 @@ const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
                       </p>
                       <p className='mt-1 text-sm text-foreground'>
                         {supervisor
-                          ? supervisor.name
+                          ? formatUserDisplayName(
+                              supervisor.name,
+                              supervisor.id,
+                              authUser?.id
+                            )
                           : 'No supervisor assigned'}
                       </p>
                     </div>
@@ -343,7 +376,11 @@ const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
                       <p className='text-sm text-muted-foreground'>
                         This agent
                         {supervisor
-                          ? ` reports to ${supervisor.name}.`
+                          ? ` reports to ${formatUserObjectLabel(
+                              supervisor.name,
+                              supervisor.id,
+                              authUser?.id
+                            )}.`
                           : ' does not have a supervisor assigned yet.'}
                       </p>
                       {teammates.length > 0 ? (
@@ -351,6 +388,7 @@ const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
                           {teammates.map((teammate) => (
                             <Badge key={teammate.id} variant='outline'>
                               {teammate.name}
+                              {authUser?.id === teammate.id ? ' (You)' : ''}
                             </Badge>
                           ))}
                         </div>
@@ -378,7 +416,11 @@ const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
                       href={`/dashboard/moderator/users/${encodeURIComponent(supervisor.id)}`}
                       className='mt-2 block font-medium text-foreground hover:underline'
                     >
-                      {supervisor.name}
+                      {formatUserDisplayName(
+                        supervisor.name,
+                        supervisor.id,
+                        authUser?.id
+                      )}
                     </Link>
                     <p className='text-sm text-muted-foreground'>
                       {supervisor.email}
@@ -406,6 +448,7 @@ const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
                           >
                             <p className='font-medium text-foreground'>
                               {agent.name}
+                              {authUser?.id === agent.id ? ' (You)' : ''}
                             </p>
                             <p className='text-sm text-muted-foreground'>
                               {agent.email}
@@ -540,7 +583,7 @@ const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
         open={isResetPasswordDialogOpen}
         onOpenChange={setIsResetPasswordDialogOpen}
         title='Reset User Password'
-        description='A new temporary password will be generated immediately. Share it securely with the user.'
+        description='A new temporary password will be generated immediately and sent to the user by email.'
         confirmLabel='Reset Password'
         isConfirming={resetUserPasswordMutation.isPending}
         onConfirm={handleResetPassword}

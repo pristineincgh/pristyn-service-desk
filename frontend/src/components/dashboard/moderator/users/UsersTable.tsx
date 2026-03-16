@@ -6,7 +6,9 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/common/tables/data-table';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { formatUserDisplayName } from '@/lib/self-reference';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/store/auth-store';
 import { type UserRole, type UserSummary } from '@/types/user-types';
 import {
   formatUserTimestamp,
@@ -45,6 +47,7 @@ const UsersTable = ({
   onPageSizeChange,
 }: UsersTableProps) => {
   const router = useRouter();
+  const authUser = useAuthStore((state) => state.authUser);
 
   const columns = useMemo<ColumnDef<UserSummary>[]>(
     () => [
@@ -59,7 +62,13 @@ const UsersTable = ({
               </AvatarFallback>
             </Avatar>
             <div className='space-y-0.5'>
-              <p className='font-medium text-foreground'>{row.original.name}</p>
+              <p className='font-medium text-foreground'>
+                {formatUserDisplayName(
+                  row.original.name,
+                  row.original.id,
+                  authUser?.id
+                )}
+              </p>
               <p className='text-xs text-muted-foreground'>
                 {row.original.email}
               </p>
@@ -110,7 +119,11 @@ const UsersTable = ({
         header: roleFilter === 'AGENT' ? 'Supervisor' : 'Reports to',
         cell: ({ row }) =>
           row.original.supervisorId
-            ? supervisorLookup[row.original.supervisorId] ?? 'Assigned'
+            ? formatUserDisplayName(
+                supervisorLookup[row.original.supervisorId] ?? 'Assigned',
+                row.original.supervisorId,
+                authUser?.id
+              )
             : 'None',
       },
       {
@@ -124,7 +137,7 @@ const UsersTable = ({
         cell: ({ row }) => formatUserTimestamp(row.original.createdAt),
       },
     ],
-    [roleFilter, supervisorLookup],
+    [roleFilter, supervisorLookup, authUser?.id],
   );
 
   return (

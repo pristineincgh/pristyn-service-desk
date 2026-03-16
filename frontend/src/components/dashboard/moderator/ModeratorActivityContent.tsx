@@ -27,7 +27,9 @@ import {
 } from '@/components/dashboard/moderator/activity/activity-formatters';
 import { useActivities } from '@/services/activity/queries';
 import { useAllUsers } from '@/services/users/queries';
+import { useAuthStore } from '@/store/auth-store';
 import { type ActivityFilters } from '@/types/activity-types';
+import { formatUserDisplayName } from '@/lib/self-reference';
 import { cn } from '@/lib/utils';
 
 const DEFAULT_PAGE = 1;
@@ -35,6 +37,7 @@ const DEFAULT_PAGE_SIZE = 20;
 const ALL_FILTER_VALUE = 'ALL';
 
 const ModeratorActivityContent = () => {
+  const authUser = useAuthStore((state) => state.authUser);
   const [page, setPage] = useState(DEFAULT_PAGE);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [searchInput, setSearchInput] = useState('');
@@ -201,7 +204,7 @@ const ModeratorActivityContent = () => {
                 <SelectItem value={ALL_FILTER_VALUE}>All actors</SelectItem>
                 {actorOptions.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
-                    {user.name}
+                    {formatUserDisplayName(user.name, user.id, authUser?.id)}
                   </SelectItem>
                 ))}
               </SelectContent>

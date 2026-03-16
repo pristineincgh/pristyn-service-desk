@@ -4,6 +4,7 @@ import '../styles/globals.css';
 import { Toaster } from 'sonner';
 import AuthProvider from '@/providers/AuthProvider';
 import RQueryClientProvider from '@/providers/RQueryClientProvider';
+import ThemeProvider from '@/providers/ThemeProvider';
 
 const nunito = Nunito({
   variable: '--font-nunito',
@@ -23,11 +24,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang='en'>
+    <html lang='en' suppressHydrationWarning>
       <body className={`${nunito.variable} font-sans antialiased`}>
-        <RQueryClientProvider>
-          <AuthProvider>{children}</AuthProvider>
-        </RQueryClientProvider>
+        <ThemeProvider
+          attribute='class'
+          defaultTheme='system'
+          enableSystem
+          disableTransitionOnChange
+        >
+          <RQueryClientProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </RQueryClientProvider>
+        </ThemeProvider>
 
         <Toaster position='bottom-right' richColors />
       </body>

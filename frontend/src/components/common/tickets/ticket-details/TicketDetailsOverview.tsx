@@ -1,3 +1,4 @@
+import { formatUserDisplayName } from '@/lib/self-reference';
 import {
   Card,
   CardContent,
@@ -11,9 +12,13 @@ import { DetailRow } from './ticket-details-primitives';
 
 interface TicketDetailsOverviewProps {
   ticket: TicketDetail;
+  authUserId?: string;
 }
 
-const TicketDetailsOverview = ({ ticket }: TicketDetailsOverviewProps) => {
+const TicketDetailsOverview = ({
+  ticket,
+  authUserId,
+}: TicketDetailsOverviewProps) => {
   return (
     <Card className='gap-0 overflow-hidden py-0'>
       <CardHeader className='border-b py-6'>
@@ -48,12 +53,35 @@ const TicketDetailsOverview = ({ ticket }: TicketDetailsOverviewProps) => {
           <DetailRow label='Customer' value={ticket.customer.name} />
           <DetailRow
             label='Assigned To'
-            value={ticket.assignedTo?.name ?? 'Unassigned'}
+            value={
+              ticket.assignedTo
+                ? formatUserDisplayName(
+                    ticket.assignedTo.name,
+                    ticket.assignedTo.id,
+                    authUserId
+                  )
+                : 'Unassigned'
+            }
           />
-          <DetailRow label='Created By' value={ticket.createdBy.name} />
+          <DetailRow
+            label='Created By'
+            value={formatUserDisplayName(
+              ticket.createdBy.name,
+              ticket.createdBy.id,
+              authUserId
+            )}
+          />
           <DetailRow
             label='Last Updated By'
-            value={ticket.updatedBy?.name ?? 'Not recorded'}
+            value={
+              ticket.updatedBy
+                ? formatUserDisplayName(
+                    ticket.updatedBy.name,
+                    ticket.updatedBy.id,
+                    authUserId
+                  )
+                : 'Not recorded'
+            }
           />
           <DetailRow
             label='Created At'

@@ -1,5 +1,7 @@
+import SupervisorDashboardContent from '@/components/dashboard/supervisor/SupervisorDashboardContent';
+
 const SupervisorDashboardPage = () => {
-  return <div>SupervisorDashboardPage</div>;
+  return <SupervisorDashboardContent />;
 };
 
 export default SupervisorDashboardPage;

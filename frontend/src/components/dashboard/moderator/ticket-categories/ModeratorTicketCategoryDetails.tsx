@@ -28,8 +28,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getStatusBadge } from '@/lib/get-status-badge';
+import { formatUserDisplayName } from '@/lib/self-reference';
 import { useDeleteTicketCategory } from '@/services/tickets/categories/mutations';
 import { useTicketCategory } from '@/services/tickets/categories/queries';
+import { useAuthStore } from '@/store/auth-store';
 import { TicketPriority } from '@/types/ticket-types';
 import { toast } from 'sonner';
 import {
@@ -66,6 +68,7 @@ const ModeratorTicketCategoryDetails = ({
   categoryId,
 }: ModeratorTicketCategoryDetailsProps) => {
   const router = useRouter();
+  const authUser = useAuthStore((state) => state.authUser);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const {
@@ -354,7 +357,13 @@ const ModeratorTicketCategoryDetails = ({
                           {getPriorityLabel(ticket.priority)}
                         </TableCell>
                         <TableCell>
-                          {ticket.assignedTo?.name ?? 'Unassigned'}
+                          {ticket.assignedTo
+                            ? formatUserDisplayName(
+                                ticket.assignedTo.name,
+                                ticket.assignedTo.id,
+                                authUser?.id
+                              )
+                            : 'Unassigned'}
                         </TableCell>
                         <TableCell>
                           {formatTicketCategoryTimestamp(ticket.createdAt)}

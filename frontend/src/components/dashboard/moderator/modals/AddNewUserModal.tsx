@@ -26,6 +26,8 @@ import {
 } from '@/components/ui/select';
 import { useAssignSupervisor, useCreateUser } from '@/services/users/mutations';
 import { useActiveUsers } from '@/services/users/queries';
+import { useAuthStore } from '@/store/auth-store';
+import { formatUserDisplayName } from '@/lib/self-reference';
 import { UserRole } from '@/types/user-types';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm, useWatch } from 'react-hook-form';
@@ -54,6 +56,7 @@ const roleLabelMap: Record<UserRole, string> = {
 };
 
 const AddNewUserModal = ({ open, onOpenChange }: AddNewUserModalProps) => {
+  const authUser = useAuthStore((state) => state.authUser);
   const createUserMutation = useCreateUser();
   const assignSupervisorMutation = useAssignSupervisor();
   const { data: activeUsersResponse, isLoading: isActiveUsersLoading } =
@@ -128,16 +131,6 @@ const AddNewUserModal = ({ open, onOpenChange }: AddNewUserModalProps) => {
         role: data.role,
       });
 
-      const showDefaultPassword = () => {
-        if (!createResponse.defaultPassword) {
-          return;
-        }
-
-        toast.info('Temporary password generated', {
-          description: createResponse.defaultPassword,
-        });
-      };
-
       const hasSupervisorSelection =
         data.role === UserRole.AGENT && Boolean(data.supervisorId?.trim());
 
@@ -151,21 +144,18 @@ const AddNewUserModal = ({ open, onOpenChange }: AddNewUserModalProps) => {
           });
 
           toast.success('User created and assigned to supervisor successfully');
-          showDefaultPassword();
           handleDialogOpenChange(false);
           return;
         } catch {
           toast.warning(
             'User created, but assigning supervisor failed. Please assign supervisor later.'
           );
-          showDefaultPassword();
           handleDialogOpenChange(false);
           return;
         }
       }
 
       toast.success(createResponse.message || 'User created successfully');
-      showDefaultPassword();
       handleDialogOpenChange(false);
     } catch {
       // Error toast is handled in mutation hook.
@@ -275,7 +265,11 @@ const AddNewUserModal = ({ open, onOpenChange }: AddNewUserModalProps) => {
                       <SelectItem value='__none__'>No supervisor</SelectItem>
                       {supervisors.map((supervisor) => (
                         <SelectItem key={supervisor.id} value={supervisor.id}>
-                          {supervisor.name}
+                          {formatUserDisplayName(
+                            supervisor.name,
+                            supervisor.id,
+                            authUser?.id
+                          )}
                         </SelectItem>
                       ))}
                     </SelectContent>

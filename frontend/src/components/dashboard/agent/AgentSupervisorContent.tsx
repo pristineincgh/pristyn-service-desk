@@ -2,6 +2,7 @@
 
 import { EmptyState } from '@/components/common/EmptyState';
 import { Button } from '@/components/ui/button';
+import { formatUserDisplayName } from '@/lib/self-reference';
 import {
   Card,
   CardContent,
@@ -10,10 +11,12 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useUsersByScope } from '@/services/users/queries';
+import { useAuthStore } from '@/store/auth-store';
 import { AlertCircle, Mail, Phone, ShieldUser } from 'lucide-react';
 import Link from 'next/link';
 
 const AgentSupervisorContent = () => {
+  const authUser = useAuthStore((state) => state.authUser);
   const { data, isLoading, isError } = useUsersByScope();
   const supervisor = data?.users?.[0] ?? null;
 
@@ -54,7 +57,13 @@ const AgentSupervisorContent = () => {
         <section className='grid gap-6 xl:grid-cols-[1.1fr_0.9fr]'>
           <Card>
             <CardHeader>
-              <CardTitle>{supervisor.name}</CardTitle>
+              <CardTitle>
+                {formatUserDisplayName(
+                  supervisor.name,
+                  supervisor.id,
+                  authUser?.id
+                )}
+              </CardTitle>
               <CardDescription>
                 Primary supervisor for tickets in your queue.
               </CardDescription>
