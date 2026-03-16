@@ -106,7 +106,7 @@ const LatestTicketsTable = ({
         </div>
         <Link
           href={listHref}
-          className='inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline'
+          className='inline-flex items-center gap-2 text-sm font-medium text-primary dark:text-sidebar-primary hover:underline'
         >
           View all tickets
           <ArrowRight className='h-4 w-4' />

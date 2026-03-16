@@ -32,9 +32,13 @@ export const activityActionLabelMap: Record<ActivityLogAction, string> = {
   TICKET_PRIORITY_CHANGED: 'Priority changed',
   TICKET_DELETED: 'Ticket deleted',
   USER_CREATED: 'User created',
+  USER_VERIFICATION_EMAIL_SENT: 'Verification email sent',
+  USER_EMAIL_VERIFIED: 'Email verified',
   USER_ASSIGNED_TO_SUPERVISOR: 'Supervisor assigned',
   USER_STATUS_CHANGED: 'Status changed',
   USER_PASSWORD_RESET: 'Password reset',
+  USER_PASSWORD_RESET_REQUESTED: 'Reset requested',
+  USER_PASSWORD_RESET_COMPLETED: 'Password reset completed',
   USER_LOGGED_IN: 'Logged in',
   USER_LOGGED_OUT: 'Logged out',
   CUSTOMER_CREATED: 'Customer created',
@@ -57,12 +61,20 @@ const activityActionBadgeClassMap: Record<ActivityLogAction, string> = {
   TICKET_DELETED: 'border-0 bg-red-500/10 text-red-700 dark:text-red-300',
   USER_CREATED:
     'border-0 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
+  USER_VERIFICATION_EMAIL_SENT:
+    'border-0 bg-blue-500/10 text-blue-700 dark:text-blue-300',
+  USER_EMAIL_VERIFIED:
+    'border-0 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
   USER_ASSIGNED_TO_SUPERVISOR:
     'border-0 bg-teal-500/10 text-teal-700 dark:text-teal-300',
   USER_STATUS_CHANGED:
     'border-0 bg-amber-500/10 text-amber-700 dark:text-amber-300',
   USER_PASSWORD_RESET:
     'border-0 bg-orange-500/10 text-orange-700 dark:text-orange-300',
+  USER_PASSWORD_RESET_REQUESTED:
+    'border-0 bg-blue-500/10 text-blue-700 dark:text-blue-300',
+  USER_PASSWORD_RESET_COMPLETED:
+    'border-0 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
   USER_LOGGED_IN:
     'border-0 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
   USER_LOGGED_OUT:
@@ -294,6 +306,22 @@ export const getActivityDetails = (activity: ActivityLogItem) => {
 
       return email ? `Created account for ${email}` : 'Created user account';
     }
+    case 'USER_VERIFICATION_EMAIL_SENT': {
+      const email = toDisplayValue(metadata.email);
+      const reason = toDisplayValue(metadata.reason);
+
+      if (email && reason) {
+        return `Sent verification email to ${email} (${formatEnumValue(reason).toLowerCase()})`;
+      }
+
+      return email
+        ? `Sent verification email to ${email}`
+        : 'Sent verification email';
+    }
+    case 'USER_EMAIL_VERIFIED':
+      return toDisplayValue(metadata.email)
+        ? `Verified email address ${toDisplayValue(metadata.email)}`
+        : 'Verified email address';
     case 'USER_ASSIGNED_TO_SUPERVISOR': {
       const previousSupervisorId = toDisplayValue(
         metadata.previousSupervisorId
@@ -313,6 +341,14 @@ export const getActivityDetails = (activity: ActivityLogItem) => {
       return toDisplayValue(metadata.email)
         ? `Issued temporary password for ${toDisplayValue(metadata.email)}`
         : 'Issued temporary password';
+    case 'USER_PASSWORD_RESET_REQUESTED':
+      return toDisplayValue(metadata.email)
+        ? `Requested password reset for ${toDisplayValue(metadata.email)}`
+        : 'Requested password reset';
+    case 'USER_PASSWORD_RESET_COMPLETED':
+      return toDisplayValue(metadata.email)
+        ? `Reset password completed for ${toDisplayValue(metadata.email)}`
+        : 'Completed password reset';
     case 'USER_LOGGED_IN':
       return 'Started a new session';
     case 'USER_LOGGED_OUT':

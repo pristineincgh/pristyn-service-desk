@@ -20,6 +20,7 @@ export interface UserSummary extends UserShort {
   phone: string | null;
   status: UserStatus;
   emailVerified: boolean;
+  mustChangePassword: boolean;
   supervisorId: string | null;
   createdAt: string;
   updatedAt: string;
@@ -118,5 +119,40 @@ export interface ChangePasswordPayload {
 }
 
 export interface ChangePasswordResponse {
+  message: string;
+}
+
+export interface SendEmailVerificationResponse {
+  message: string;
+  expiresAt: string;
+}
+
+export interface VerifyEmailPayload {
+  token: string;
+}
+
+export interface VerifyEmailResponse {
+  message: string;
+}
+
+export interface ResendUserVerificationEmailResponse {
+  message: string;
+  expiresAt: string;
+}
+
+export interface RequestPasswordResetPayload {
+  email: string;
+}
+
+export interface RequestPasswordResetResponse {
+  message: string;
+}
+
+export interface ResetPasswordPayload {
+  token: string;
+  newPassword: string;
+}
+
+export interface ResetPasswordResponse {
   message: string;
 }

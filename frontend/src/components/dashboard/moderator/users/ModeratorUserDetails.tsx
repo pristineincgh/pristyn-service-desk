@@ -22,6 +22,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import {
+  useResendUserVerificationEmail,
   useResetUserPassword,
   useUpdateUserStatus,
 } from '@/services/users/mutations';
@@ -73,11 +74,12 @@ const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
   const { data: allUsersResponse } = useAllUsers();
   const updateUserStatusMutation = useUpdateUserStatus();
   const resetUserPasswordMutation = useResetUserPassword();
+  const resendUserVerificationEmailMutation = useResendUserVerificationEmail();
 
   const allUsers = allUsersResponse?.users ?? [];
 
   const supervisor = user?.supervisorId
-    ? allUsers.find((candidate) => candidate.id === user.supervisorId) ?? null
+    ? (allUsers.find((candidate) => candidate.id === user.supervisorId) ?? null)
     : null;
 
   const directReports = allUsers.filter(
@@ -160,10 +162,19 @@ const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
       const response = await resetUserPasswordMutation.mutateAsync(user.id);
 
       toast.success(response.message || 'Password reset successfully');
-      toast.info('Temporary password generated', {
-        description: response.defaultPassword,
-      });
       setIsResetPasswordDialogOpen(false);
+    } catch {
+      // Error toast handled in mutation hook.
+    }
+  };
+
+  const handleResendVerificationEmail = async () => {
+    try {
+      const response = await resendUserVerificationEmailMutation.mutateAsync(
+        user.id
+      );
+
+      toast.success(response.message || 'Verification email sent successfully');
     } catch {
       // Error toast handled in mutation hook.
     }
@@ -239,10 +250,16 @@ const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
             <div className='flex flex-wrap gap-2'>
               <Button
                 variant='outline'
-                // onClick={() => setIsEditUserModalOpen(true)}
+                onClick={handleResendVerificationEmail}
+                disabled={
+                  user.emailVerified ||
+                  resendUserVerificationEmailMutation.isPending
+                }
               >
                 <BiMailSend />
-                Resend Email Verification
+                {resendUserVerificationEmailMutation.isPending
+                  ? 'Sending...'
+                  : 'Resend Email Verification'}
               </Button>
             </div>
           </CardContent>
@@ -540,7 +557,7 @@ const ModeratorUserDetails = ({ userId }: ModeratorUserDetailsProps) => {
         open={isResetPasswordDialogOpen}
         onOpenChange={setIsResetPasswordDialogOpen}
         title='Reset User Password'
-        description='A new temporary password will be generated immediately. Share it securely with the user.'
+        description='A new temporary password will be generated immediately and sent to the user by email.'
         confirmLabel='Reset Password'
         isConfirming={resetUserPasswordMutation.isPending}
         onConfirm={handleResetPassword}

@@ -85,3 +85,20 @@ export const useAssignSupervisor = () => {
     },
   });
 };
+
+export const useResendUserVerificationEmail = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => endpoints.resendUserVerificationEmail(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      queryClient.invalidateQueries({ queryKey: activityQueryKeys.all });
+    },
+    onError: (error: Error) => {
+      toast.error(
+        error.message || "Failed to resend user verification email",
+      );
+    },
+  });
+};

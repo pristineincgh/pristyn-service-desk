@@ -11,8 +11,8 @@ const buttonVariants = cva(
       variant: {
         default: 'bg-primary text-primary-foreground [a]:hover:bg-primary/80',
         outline:
-          'border border-primary bg-transparent text-primary shadow-xs hover:bg-primary' +
-          ' hover:text-primary-foreground' +
+          'border border-primary bg-transparent text-primary dark:text-sidebar-primary shadow-xs hover:bg-primary' +
+          ' hover:text-primary-foreground dark:hover:text-primary-foreground' +
           ' dark:bg-input/30' +
           ' dark:border-input dark:hover:bg-input/50',
         secondary:
@@ -26,7 +26,7 @@ const buttonVariants = cva(
           ' hover:text-primary-foreground' +
           ' dark:bg-input/30' +
           ' dark:border-input dark:hover:bg-input/50',
-        link: 'text-primary underline-offset-4 hover:underline',
+        link: 'text-primary dark:text-sidebar-primary underline-offset-4 hover:underline',
       },
       size: {
         default:

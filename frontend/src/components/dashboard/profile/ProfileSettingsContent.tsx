@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -22,9 +23,11 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { getDashboardByRole } from "@/lib/roles";
+import { cn } from "@/lib/utils";
 import {
   useChangePassword,
   useLogout,
+  useSendEmailVerification,
   useUpdateProfile,
 } from "@/services/auth/mutations";
 import { useAuthUserQuery } from "@/services/auth/queries";
@@ -58,8 +61,14 @@ const ProfileSettingsContent = () => {
   const { data } = useAuthUserQuery();
   const updateProfileMutation = useUpdateProfile();
   const changePasswordMutation = useChangePassword();
+  const sendEmailVerificationMutation = useSendEmailVerification();
   const { mutateAsync: logout, isPending: isLogoutPending } = useLogout();
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    next: false,
+    confirm: false,
+  });
 
   const user = data?.user ?? authUser;
 
@@ -256,6 +265,19 @@ const ProfileSettingsContent = () => {
                   <p className="mt-1 text-sm">
                     {user.emailVerified ? "Verified" : "Pending"}
                   </p>
+                  {!user.emailVerified ? (
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="mt-1 h-auto px-0"
+                      onClick={() => sendEmailVerificationMutation.mutate()}
+                      disabled={sendEmailVerificationMutation.isPending}
+                    >
+                      {sendEmailVerificationMutation.isPending
+                        ? "Sending..."
+                        : "Resend verification email"}
+                    </Button>
+                  ) : null}
                 </div>
                 <div>
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -290,16 +312,33 @@ const ProfileSettingsContent = () => {
                       <FieldLabel htmlFor="current-password">
                         Current password
                       </FieldLabel>
-                      <Input
-                        id="current-password"
-                        type="password"
-                        disabled={
-                          changePasswordMutation.isPending ||
-                          isPasswordSubmitting
-                        }
-                        aria-invalid={!!passwordErrors.currentPassword}
-                        {...registerPassword("currentPassword")}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="current-password"
+                          type={showPasswords.current ? "text" : "password"}
+                          disabled={
+                            changePasswordMutation.isPending ||
+                            isPasswordSubmitting
+                          }
+                          aria-invalid={!!passwordErrors.currentPassword}
+                          className={cn("pr-10")}
+                          {...registerPassword("currentPassword")}
+                        />
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:bg-transparent [&_svg:not([class*='size-'])]:size-4"
+                          onClick={() =>
+                            setShowPasswords((current) => ({
+                              ...current,
+                              current: !current.current,
+                            }))
+                          }
+                        >
+                          {showPasswords.current ? <EyeOff /> : <Eye />}
+                        </Button>
+                      </div>
                       <FieldError errors={[passwordErrors.currentPassword]} />
                     </Field>
 
@@ -307,16 +346,33 @@ const ProfileSettingsContent = () => {
                       <FieldLabel htmlFor="new-password">
                         New password
                       </FieldLabel>
-                      <Input
-                        id="new-password"
-                        type="password"
-                        disabled={
-                          changePasswordMutation.isPending ||
-                          isPasswordSubmitting
-                        }
-                        aria-invalid={!!passwordErrors.newPassword}
-                        {...registerPassword("newPassword")}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="new-password"
+                          type={showPasswords.next ? "text" : "password"}
+                          disabled={
+                            changePasswordMutation.isPending ||
+                            isPasswordSubmitting
+                          }
+                          aria-invalid={!!passwordErrors.newPassword}
+                          className={cn("pr-10")}
+                          {...registerPassword("newPassword")}
+                        />
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:bg-transparent [&_svg:not([class*='size-'])]:size-4"
+                          onClick={() =>
+                            setShowPasswords((current) => ({
+                              ...current,
+                              next: !current.next,
+                            }))
+                          }
+                        >
+                          {showPasswords.next ? <EyeOff /> : <Eye />}
+                        </Button>
+                      </div>
                       <FieldError errors={[passwordErrors.newPassword]} />
                     </Field>
 
@@ -324,16 +380,33 @@ const ProfileSettingsContent = () => {
                       <FieldLabel htmlFor="confirm-password">
                         Confirm new password
                       </FieldLabel>
-                      <Input
-                        id="confirm-password"
-                        type="password"
-                        disabled={
-                          changePasswordMutation.isPending ||
-                          isPasswordSubmitting
-                        }
-                        aria-invalid={!!passwordErrors.confirmPassword}
-                        {...registerPassword("confirmPassword")}
-                      />
+                      <div className="relative">
+                        <Input
+                          id="confirm-password"
+                          type={showPasswords.confirm ? "text" : "password"}
+                          disabled={
+                            changePasswordMutation.isPending ||
+                            isPasswordSubmitting
+                          }
+                          aria-invalid={!!passwordErrors.confirmPassword}
+                          className={cn("pr-10")}
+                          {...registerPassword("confirmPassword")}
+                        />
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:bg-transparent [&_svg:not([class*='size-'])]:size-4"
+                          onClick={() =>
+                            setShowPasswords((current) => ({
+                              ...current,
+                              confirm: !current.confirm,
+                            }))
+                          }
+                        >
+                          {showPasswords.confirm ? <EyeOff /> : <Eye />}
+                        </Button>
+                      </div>
                       <FieldError errors={[passwordErrors.confirmPassword]} />
                     </Field>
                   </FieldGroup>

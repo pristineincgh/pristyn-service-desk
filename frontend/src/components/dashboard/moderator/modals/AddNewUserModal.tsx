@@ -128,16 +128,6 @@ const AddNewUserModal = ({ open, onOpenChange }: AddNewUserModalProps) => {
         role: data.role,
       });
 
-      const showDefaultPassword = () => {
-        if (!createResponse.defaultPassword) {
-          return;
-        }
-
-        toast.info('Temporary password generated', {
-          description: createResponse.defaultPassword,
-        });
-      };
-
       const hasSupervisorSelection =
         data.role === UserRole.AGENT && Boolean(data.supervisorId?.trim());
 
@@ -151,21 +141,18 @@ const AddNewUserModal = ({ open, onOpenChange }: AddNewUserModalProps) => {
           });
 
           toast.success('User created and assigned to supervisor successfully');
-          showDefaultPassword();
           handleDialogOpenChange(false);
           return;
         } catch {
           toast.warning(
             'User created, but assigning supervisor failed. Please assign supervisor later.'
           );
-          showDefaultPassword();
           handleDialogOpenChange(false);
           return;
         }
       }
 
       toast.success(createResponse.message || 'User created successfully');
-      showDefaultPassword();
       handleDialogOpenChange(false);
     } catch {
       // Error toast is handled in mutation hook.
