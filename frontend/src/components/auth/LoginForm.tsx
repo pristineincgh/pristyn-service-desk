@@ -85,7 +85,9 @@ const LoginForm = () => {
             <ShieldCheck className='h-7 w-7' />
           </div>
           <div className='mt-4 space-y-2'>
-            <p className='text-sm font-semibold text-muted-foreground'>Pristyn</p>
+            <p className='text-sm font-semibold text-muted-foreground'>
+              Pristyn
+            </p>
             <p className='text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground'>
               Welcome back
             </p>
@@ -105,9 +107,9 @@ const LoginForm = () => {
                 name='email'
                 control={form.control}
                 render={({ field, fieldState }) => (
-                    <Field data-invalid={fieldState.invalid}>
-                      <FieldLabel htmlFor='email'>Email address</FieldLabel>
-                      <div className='relative'>
+                  <Field data-invalid={fieldState.invalid}>
+                    <FieldLabel htmlFor='email'>Email address</FieldLabel>
+                    <div className='relative'>
                       <Mail className='pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
                       <Input
                         {...field}

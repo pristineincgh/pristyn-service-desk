@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Bell, LogOut, Search, User, UserIcon } from 'lucide-react';
+import { LogOut, Search, UserIcon } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +22,7 @@ import { getDashboardByRole } from '@/lib/roles';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { getUserInitials } from '../moderator/users/user-formatters';
 import ThemeToggle from '@/components/common/ThemeToggle';
+import NotificationBell from './NotificationBell';
 
 const TopHeader = () => {
   const router = useRouter();
@@ -59,16 +60,7 @@ const TopHeader = () => {
           <div className='ml-4 flex items-center gap-4'>
             <ThemeToggle />
 
-            {/* Notification Bell */}
-            <Button
-              variant='ghost'
-              size='icon'
-              className='relative h-9 w-9'
-              // onClick={handleNotificationClick}
-            >
-              <Bell className='h-5 w-5' />
-              <span className='absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500' />
-            </Button>
+            <NotificationBell />
 
             {/* User Menu */}
             <DropdownMenu>

@@ -5,27 +5,30 @@ import ForcePasswordChangeDialog from '@/components/dashboard/layout/ForcePasswo
 import SidebarNav from '@/components/dashboard/layout/SidebarNav';
 import TopHeader from '@/components/dashboard/layout/TopHeader';
 import DashboardProvider from '@/providers/DashboardProvider';
+import NotificationsRealtimeProvider from '@/providers/NotificationsRealtimeProvider';
 import { ReactNode } from 'react';
 // import DashboardProvider from './dashboard-provider';
 
 const DashboardLayout = ({ children }: { children: ReactNode }) => {
   return (
     <DashboardProvider>
-      <div className='min-h-screen flex'>
-        <SidebarNav />
+      <NotificationsRealtimeProvider>
+        <div className='min-h-screen flex'>
+          <SidebarNav />
 
-        {/* Main Content */}
-        <div className='flex flex-1 flex-col ml-64'>
-          <TopHeader />
-          <EmailVerificationBanner />
-          <ForcePasswordChangeDialog />
+          {/* Main Content */}
+          <div className='flex flex-1 flex-col ml-64'>
+            <TopHeader />
+            <EmailVerificationBanner />
+            <ForcePasswordChangeDialog />
 
-          {/* Content Area */}
-          <main className='flex-1'>
-            <div className='p-6'>{children}</div>
-          </main>
+            {/* Content Area */}
+            <main className='flex-1'>
+              <div className='p-6'>{children}</div>
+            </main>
+          </div>
         </div>
-      </div>
+      </NotificationsRealtimeProvider>
     </DashboardProvider>
   );
 };
