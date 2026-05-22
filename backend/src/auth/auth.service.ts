@@ -75,6 +75,7 @@ export class AuthService {
 
   constructor(
     private jwtService: JwtService,
+    @Inject(forwardRef(() => UsersService))
     private usersService: UsersService,
     private configService: ConfigService,
     private cacheService: RedisService,

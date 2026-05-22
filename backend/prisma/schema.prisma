@@ -32,9 +32,28 @@ model User {
   agents                  User[]                   @relation("SupervisorToAgent")
   emailVerificationTokens EmailVerificationToken[]
   passwordResetTokens     PasswordResetToken[]
+  notifications           Notification[]
 
   @@index([email])
   @@index([supervisorId])
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  metadata  Json?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, readAt])
+  @@index([createdAt])
 }
 
 model EmailVerificationToken {
@@ -214,4 +233,13 @@ enum ActivityLogAction {
   TICKET_CATEGORY_CREATED
   TICKET_CATEGORY_UPDATED
   TICKET_CATEGORY_DELETED
+}
+
+enum NotificationType {
+  TICKET_ASSIGNED
+  TICKET_REASSIGNED
+  TICKET_STATUS_CHANGED
+  TICKET_NOTE_ADDED
+  SUPERVISOR_ASSIGNED
+  USER_PASSWORD_RESET
 }

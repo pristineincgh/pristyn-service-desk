@@ -11,6 +11,7 @@ import { Prisma } from 'src/generated/prisma/client';
 import {
   ActivityEntityType,
   ActivityLogAction,
+  NotificationType,
   Priority,
   TicketStatus,
   UserRole,
@@ -26,6 +27,7 @@ import { UpdateTicketNoteDto } from './dto/update-ticket-note.dto';
 import { UsersService } from 'src/users/users.service';
 import { ActivityService } from 'src/activity/activity.service';
 import { PrismaService } from 'src/prisma.service';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 const TICKET_INCLUDE = {
   assignedTo: {
@@ -140,6 +142,7 @@ export class TicketsService {
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
     private readonly activityService: ActivityService,
+    private readonly notificationsService: NotificationsService,
   ) {
     this.slaHoursByPriority = {
       [Priority.HIGH]: this.configService.get<number>(
@@ -478,10 +481,14 @@ export class TicketsService {
     await this.getRequesterOrThrow(currentUserId);
 
     const assignedToId = createTicketDto.assignedToId ?? currentUserId;
+    let assignedUser:
+      | Awaited<ReturnType<UsersService['findById']>>
+      | null
+      | undefined;
 
     // check if assigned user exists
     if (assignedToId !== currentUserId) {
-      const assignedUser = await this.usersService.findById(assignedToId);
+      assignedUser = await this.usersService.findById(assignedToId);
 
       if (!assignedUser) {
         throw new NotFoundException('Assigned user does not exist');
@@ -578,6 +585,23 @@ export class TicketsService {
           reason: 'initial_assignment',
         },
       });
+
+      if (assignedUser && assignedUser.id !== currentUserId) {
+        await this.notificationsService.createNotification({
+          userId: assignedUser.id,
+          type: NotificationType.TICKET_ASSIGNED,
+          title: 'New ticket assigned',
+          message: `${ticket.ticketNumber} has been assigned to you.`,
+          link: this.notificationsService.buildTicketLink(
+            assignedUser.role,
+            ticket.id,
+          ),
+          metadata: {
+            ticketId: ticket.id,
+            ticketNumber: ticket.ticketNumber,
+          },
+        });
+      }
     }
 
     return this.withSla(ticket);
@@ -761,7 +785,10 @@ export class TicketsService {
         ticketId: ticket.id,
         metadata: {
           changedFields,
-          previous: this.buildTicketAuditSnapshot(existingTicket, changedFields),
+          previous: this.buildTicketAuditSnapshot(
+            existingTicket,
+            changedFields,
+          ),
           current: this.buildTicketAuditSnapshot(ticket, changedFields),
         },
       });
@@ -783,6 +810,32 @@ export class TicketsService {
           assignedToId: ticket.assignedToId,
         },
       });
+
+      if (ticket.assignedToId && ticket.assignedToId !== requester.id) {
+        const assignee = await this.usersService.findById(ticket.assignedToId);
+
+        if (assignee) {
+          await this.notificationsService.createNotification({
+            userId: assignee.id,
+            type: existingTicket.assignedToId
+              ? NotificationType.TICKET_REASSIGNED
+              : NotificationType.TICKET_ASSIGNED,
+            title: existingTicket.assignedToId
+              ? 'Ticket reassigned'
+              : 'Ticket assigned',
+            message: `${ticket.ticketNumber} is now assigned to you.`,
+            link: this.notificationsService.buildTicketLink(
+              assignee.role,
+              ticket.id,
+            ),
+            metadata: {
+              ticketId: ticket.id,
+              ticketNumber: ticket.ticketNumber,
+              previousAssignedToId: existingTicket.assignedToId,
+            },
+          });
+        }
+      }
     }
 
     if (
@@ -800,6 +853,29 @@ export class TicketsService {
           status: ticket.status,
         },
       });
+
+      if (ticket.assignedToId && ticket.assignedToId !== requester.id) {
+        const assignee = await this.usersService.findById(ticket.assignedToId);
+
+        if (assignee) {
+          await this.notificationsService.createNotification({
+            userId: assignee.id,
+            type: NotificationType.TICKET_STATUS_CHANGED,
+            title: 'Ticket status updated',
+            message: `${ticket.ticketNumber} moved to ${ticket.status.replaceAll('_', ' ').toLowerCase()}.`,
+            link: this.notificationsService.buildTicketLink(
+              assignee.role,
+              ticket.id,
+            ),
+            metadata: {
+              ticketId: ticket.id,
+              ticketNumber: ticket.ticketNumber,
+              previousStatus: existingTicket.status,
+              status: ticket.status,
+            },
+          });
+        }
+      }
     }
 
     if (
@@ -879,6 +955,34 @@ export class TicketsService {
           assignedToId: dto.assignedToId,
         },
       });
+
+      if (dto.assignedToId !== requester.id) {
+        const assignee = await this.usersService.findById(dto.assignedToId);
+
+        if (assignee) {
+          await this.notificationsService.createNotification({
+            userId: assignee.id,
+            type: ticket.assignedToId
+              ? NotificationType.TICKET_REASSIGNED
+              : NotificationType.TICKET_ASSIGNED,
+            title: ticket.assignedToId
+              ? 'Tickets reassigned'
+              : 'Tickets assigned',
+            message:
+              ticketIds.length === 1
+                ? `${ticket.title} is now assigned to you.`
+                : `${ticketIds.length} tickets have been assigned to you.`,
+            link: this.notificationsService.buildTicketLink(
+              assignee.role,
+              ticket.id,
+            ),
+            metadata: {
+              ticketId: ticket.id,
+              previousAssignedToId: ticket.assignedToId,
+            },
+          });
+        }
+      }
     }
 
     return {
@@ -921,7 +1025,9 @@ export class TicketsService {
         metadata: {
           changedFields: ['status'],
           previous: this.buildTicketAuditSnapshot(ticket, ['status']),
-          current: this.buildTicketAuditSnapshot({ status: dto.status }, ['status']),
+          current: this.buildTicketAuditSnapshot({ status: dto.status }, [
+            'status',
+          ]),
         },
       });
 
@@ -936,6 +1042,28 @@ export class TicketsService {
           status: dto.status,
         },
       });
+
+      if (ticket.assignedToId && ticket.assignedToId !== requester.id) {
+        const assignee = await this.usersService.findById(ticket.assignedToId);
+
+        if (assignee) {
+          await this.notificationsService.createNotification({
+            userId: assignee.id,
+            type: NotificationType.TICKET_STATUS_CHANGED,
+            title: 'Ticket status updated',
+            message: `${ticket.title} moved to ${dto.status.replaceAll('_', ' ').toLowerCase()}.`,
+            link: this.notificationsService.buildTicketLink(
+              assignee.role,
+              ticket.id,
+            ),
+            metadata: {
+              ticketId: ticket.id,
+              previousStatus: ticket.status,
+              status: dto.status,
+            },
+          });
+        }
+      }
     }
 
     return {
@@ -1043,6 +1171,38 @@ export class TicketsService {
         },
       },
     });
+
+    const ticket = await this.prisma.ticket.findUnique({
+      where: { id: ticketId },
+      select: {
+        id: true,
+        ticketNumber: true,
+        title: true,
+        assignedToId: true,
+      },
+    });
+
+    if (ticket?.assignedToId && ticket.assignedToId !== requester.id) {
+      const assignee = await this.usersService.findById(ticket.assignedToId);
+
+      if (assignee) {
+        await this.notificationsService.createNotification({
+          userId: assignee.id,
+          type: NotificationType.TICKET_NOTE_ADDED,
+          title: 'New ticket note',
+          message: `A new note was added to ${ticket.ticketNumber}.`,
+          link: this.notificationsService.buildTicketLink(
+            assignee.role,
+            ticket.id,
+          ),
+          metadata: {
+            ticketId: ticket.id,
+            ticketNumber: ticket.ticketNumber,
+            noteId: note.id,
+          },
+        });
+      }
+    }
 
     return note;
   }

@@ -12,6 +12,7 @@ import { CustomersModule } from './customers/customers.module';
 import { TicketCategoriesModule } from './ticket-categories/ticket-categories.module';
 import { TicketsModule } from './tickets/tickets.module';
 import { MailModule } from './mail/mail.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { MailModule } from './mail/mail.module';
     TicketCategoriesModule,
     TicketsModule,
     MailModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

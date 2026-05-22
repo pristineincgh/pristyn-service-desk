@@ -6,9 +6,15 @@ import { PrismaService } from 'src/prisma.service';
 import { UsersBootstrapService } from './users-bootstrap.service';
 import { ActivityModule } from 'src/activity/activity.module';
 import { MailModule } from 'src/mail/mail.module';
+import { NotificationsModule } from 'src/notifications/notifications.module';
 
 @Module({
-  imports: [forwardRef(() => AuthModule), ActivityModule, MailModule],
+  imports: [
+    forwardRef(() => AuthModule),
+    ActivityModule,
+    MailModule,
+    NotificationsModule,
+  ],
   providers: [UsersService, PrismaService, UsersBootstrapService],
   controllers: [UsersController],
   exports: [UsersService],

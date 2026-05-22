@@ -17,6 +17,7 @@ import { User } from 'src/generated/prisma/client';
 import {
   ActivityEntityType,
   ActivityLogAction,
+  NotificationType,
   UserRole,
   UserStatus,
 } from 'src/generated/prisma/enums';
@@ -25,6 +26,7 @@ import { SafeUser } from 'src/auth/types/user.types';
 import { ActivityService } from 'src/activity/activity.service';
 import { EmailVerificationService } from 'src/auth/email-verification.service';
 import { MailService } from 'src/mail/mail.service';
+import { NotificationsService } from 'src/notifications/notifications.service';
 
 @Injectable()
 export class UsersService {
@@ -37,6 +39,7 @@ export class UsersService {
     @Inject(forwardRef(() => EmailVerificationService))
     private readonly emailVerificationService: EmailVerificationService,
     private readonly mailService: MailService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   private readonly safeUserSelect = {
@@ -407,6 +410,19 @@ export class UsersService {
       },
     });
 
+    if (user.supervisor) {
+      await this.notificationsService.createNotification({
+        userId: user.id,
+        type: NotificationType.SUPERVISOR_ASSIGNED,
+        title: 'Supervisor assigned',
+        message: `${user.supervisor.name} is now assigned as your supervisor.`,
+        link: '/dashboard/agent/supervisor',
+        metadata: {
+          supervisorId: user.supervisor.id,
+        },
+      });
+    }
+
     return user;
   }
 
@@ -574,6 +590,30 @@ export class UsersService {
           supervisorId: updatedUser.supervisorId,
         },
       });
+
+      if (updatedUser.role === UserRole.AGENT && updatedUser.supervisorId) {
+        const supervisor = await this.prisma.user.findUnique({
+          where: { id: updatedUser.supervisorId },
+          select: {
+            id: true,
+            name: true,
+          },
+        });
+
+        if (supervisor) {
+          await this.notificationsService.createNotification({
+            userId: updatedUser.id,
+            type: NotificationType.SUPERVISOR_ASSIGNED,
+            title: 'Supervisor assignment updated',
+            message: `${supervisor.name} is now assigned as your supervisor.`,
+            link: '/dashboard/agent/supervisor',
+            metadata: {
+              supervisorId: supervisor.id,
+              previousSupervisorId: existingUser.supervisorId,
+            },
+          });
+        }
+      }
     }
 
     return updatedUser;
@@ -779,6 +819,19 @@ export class UsersService {
       htmlProps: {
         firstName: existingUser.name,
         temporaryPassword: defaultPassword,
+      },
+    });
+
+    const targetUser = await this.findPublicById(existingUser.id);
+    await this.notificationsService.createNotification({
+      userId: existingUser.id,
+      type: NotificationType.USER_PASSWORD_RESET,
+      title: 'Password reset required',
+      message:
+        'A moderator reset your password. Use the temporary password from your email and update it immediately.',
+      link: this.notificationsService.buildProfileSettingsLink(targetUser.role),
+      metadata: {
+        actorId,
       },
     });
 
